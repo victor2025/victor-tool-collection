@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Victor Tool Collection</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 20px;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.015) 0%, transparent 60%),
+        #0a0a0a;
+    }
+    .container { max-width: 680px; width: 100%; }
+    .header { text-align: center; margin-bottom: 40px; }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      color: #e0e0e0;
+      margin-bottom: 4px;
+    }
+    .header .sub {
+      font-size: 13px;
+      color: #555;
+      letter-spacing: 2px;
+    }
+
+    .category { margin-bottom: 36px; }
+    .category-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    .category-title span {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      color: #666;
+      text-transform: uppercase;
+    }
+    .category-title .line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, #1a1a1a, transparent);
+    }
+
+    .tool-list { display: flex; flex-direction: column; gap: 10px; }
+    .tool-card {
+      display: flex;
+      align-items: center;
+      padding: 16px 20px;
+      border-radius: 10px;
+      border: 1px solid #222;
+      background: linear-gradient(135deg, #111 0%, #151515 100%);
+      text-decoration: none;
+      color: #ccc;
+      transition: all 0.2s ease;
+    }
+    .tool-card:hover {
+      border-color: #4ecdc4;
+      background: linear-gradient(135deg, #1a1a1a 0%, #151515 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(78, 205, 196, 0.06);
+    }
+    .tool-icon {
+      width: 40px; height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-right: 14px;
+      flex-shrink: 0;
+    }
+    .tool-icon.score { background: #1a2a28; }
+    .tool-icon.dev { background: #2a2820; }
+    .tool-info { flex: 1; }
+    .tool-name { font-size: 16px; font-weight: 600; color: #e8e8e8; }
+    .tool-desc { font-size: 12px; color: #555; margin-top: 2px; }
+    .tool-tags { display: flex; gap: 6px; margin-top: 4px; }
+    .tool-tag {
+      font-size: 10px;
+      padding: 1px 7px;
+      border-radius: 3px;
+      background: #1a2a28;
+      color: #4ecdc4;
+    }
+    .tool-tag.dev-tag { background: #2a2820; color: #ffd93d; }
+    .tool-arrow { font-size: 16px; color: #444; margin-left: 12px; transition: color 0.2s; }
+    .tool-card:hover .tool-arrow { color: #4ecdc4; }
+
+    .placeholder {
+      border: 1px dashed #222;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      color: #333;
+      font-size: 13px;
+      letter-spacing: 1px;
+      cursor: default;
+      transition: border-color 0.2s;
+    }
+    .placeholder:hover { border-color: #333; }
+
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #111;
+      font-size: 12px;
+      color: #333;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🧰 Victor Tool Collection</h1>
+      <div class="sub">localhost:8001</div>
+    </div>
+
+    <!-- ====== 开发工具集 ====== -->
+    <div class="category">
+      <div class="category-title">
+        <span>🛠 开发工具集</span>
+        <div class="line"></div>
+      </div>
+      <div class="tool-list">
+        <a href="/base64/" class="tool-card">
+          <div class="tool-icon dev">🔣</div>
+          <div class="tool-info">
+            <div class="tool-name">Base64 编解码</div>
+            <div class="tool-desc">UTF-8 编码/解码 · 双向同步 · 一键复制</div>
+            <div class="tool-tags"><span class="tool-tag dev-tag">工具</span></div>
+          </div>
+          <span class="tool-arrow">→</span>
+        </a>
+        <a href="/qrcode/" class="tool-card">
+          <div class="tool-icon dev">📱</div>
+          <div class="tool-info">
+            <div class="tool-name">二维码工具</div>
+            <div class="tool-desc">生成二维码 · 图片扫码 · 摄像头扫码</div>
+            <div class="tool-tags"><span class="tool-tag dev-tag">工具</span></div>
+          </div>
+          <span class="tool-arrow">→</span>
+        </a>
+        <div class="placeholder">➕ 更多开发工具即将加入...</div>
+      </div>
+    </div>
+
+    <!-- ====== 娱乐工具集 ====== -->
+    <div class="category">
+      <div class="category-title">
+        <span>🎮 娱乐工具集</span>
+        <div class="line"></div>
+      </div>
+      <div class="tool-list">
+        <a href="/score-board/" class="tool-card">
+          <div class="tool-icon score">🏀</div>
+          <div class="tool-info">
+            <div class="tool-name">记分板</div>
+            <div class="tool-desc">可编辑队名 · 翻页动画 · 本地存储</div>
+            <div class="tool-tags"><span class="tool-tag">React</span></div>
+          </div>
+          <span class="tool-arrow">→</span>
+        </a>
+        <div class="placeholder">➕ 更多娱乐工具即将加入...</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Victor Tool Collection · 添加新工具请见 deploy/README.md
+    </div>
+  </div>
+</body>
+</html>

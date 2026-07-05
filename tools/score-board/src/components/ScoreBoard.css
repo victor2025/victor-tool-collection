@@ -1,0 +1,271 @@
+.scoreboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  padding: 40px 50px;
+  background: linear-gradient(135deg, #0a0a0a 0%, #111 50%, #0a0a0a 100%);
+  border-radius: 20px;
+  border: 2px solid #2a2a2a;
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  max-width: 700px;
+  width: 100%;
+}
+
+/* 标题 */
+.scoreboard-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.title-text {
+  font-family: 'Orbitron', monospace;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 6px;
+  background: linear-gradient(180deg, #e0e0e0 0%, #888 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.title-deco {
+  font-size: 24px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* 主体 */
+.scoreboard-body {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.team-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.team-name {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 4px;
+  min-width: 100px;
+}
+
+.team-a-name {
+  color: #ff6b6b;
+  border-bottom: 2px solid #ff6b6b;
+}
+
+.team-b-name {
+  color: #4ecdc4;
+  border-bottom: 2px solid #4ecdc4;
+}
+
+.team-name:hover {
+  opacity: 0.8;
+}
+
+.team-name:hover .team-name-edit-icon {
+  opacity: 1;
+}
+
+.team-name-text {
+  display: block;
+  width: 100%;
+  font-family: 'Orbitron', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-align: center;
+}
+
+.team-name-edit-icon {
+  position: absolute;
+  right: -22px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+
+.team-name-input {
+  font-family: 'Orbitron', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background: #222;
+  color: inherit;
+  outline: none;
+  width: 140px;
+  text-align: center;
+}
+
+.team-name-input:focus {
+  border-color: #666;
+  box-shadow: 0 0 8px rgba(255,255,255,0.1);
+}
+
+.team-a-name .team-name-input {
+  color: #ff6b6b;
+  border-color: #ff6b6b44;
+}
+
+.team-a-name .team-name-input:focus {
+  border-color: #ff6b6b;
+}
+
+.team-b-name .team-name-input {
+  color: #4ecdc4;
+  border-color: #4ecdc444;
+}
+
+.team-b-name .team-name-input:focus {
+  border-color: #4ecdc4;
+}
+
+/* 数字组 */
+.digit-group {
+  display: flex;
+  gap: 8px;
+}
+
+/* VS 分隔 */
+.vs-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vs-text {
+  font-family: 'Orbitron', monospace;
+  font-size: 22px;
+  font-weight: 900;
+  color: #555;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+/* 控制按钮 */
+.team-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.ctrl-btn {
+  font-family: 'Orbitron', monospace;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: linear-gradient(180deg, #222 0%, #1a1a1a 100%);
+  color: #ccc;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.ctrl-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+}
+
+.ctrl-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.ctrl-plus {
+  color: #4ecdc4;
+  border-color: #4ecdc4;
+}
+
+.ctrl-plus:hover {
+  background: linear-gradient(180deg, #2a4a46 0%, #1a3a36 100%);
+  box-shadow: 0 0 12px rgba(78, 205, 196, 0.3);
+}
+
+.ctrl-plus-3 {
+  font-size: 12px;
+  padding: 8px 12px;
+}
+
+.ctrl-minus {
+  color: #ff6b6b;
+  border-color: #ff6b6b;
+}
+
+.ctrl-minus:hover {
+  background: linear-gradient(180deg, #4a2a2a 0%, #3a1a1a 100%);
+  box-shadow: 0 0 12px rgba(255, 107, 107, 0.3);
+}
+
+/* 底部 */
+.scoreboard-footer {
+  display: flex;
+  gap: 12px;
+}
+
+.ctrl-reset {
+  padding: 10px 30px;
+  font-size: 14px;
+  color: #888;
+  border-color: #444;
+  letter-spacing: 2px;
+}
+
+.ctrl-reset:hover {
+  color: #ff4444;
+  border-color: #ff4444;
+  background: linear-gradient(180deg, #3a1a1a 0%, #2a1010 100%);
+}
+
+/* 响应式 */
+@media (max-width: 600px) {
+  .scoreboard {
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .scoreboard-body {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .vs-divider {
+    padding: 5px 0;
+  }
+
+  .flip-digit {
+    width: 70px;
+    height: 100px;
+  }
+
+  .digit-text {
+    font-size: 70px;
+    line-height: 100px;
+  }
+
+  .title-text {
+    font-size: 20px;
+    letter-spacing: 3px;
+  }
+}

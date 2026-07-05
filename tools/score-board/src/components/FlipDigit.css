@@ -1,0 +1,178 @@
+/* ===== 记分板数字翻页卡 ===== */
+
+.flip-digit {
+  position: relative;
+  display: inline-flex;
+  width: 100px;
+  height: 140px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #1c1c1c 0%, #151515 50%, #1c1c1c 100%);
+  border: 1px solid #2a2a2a;
+  box-shadow:
+    0 4px 15px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  perspective: 600px;
+  font-family: 'Orbitron', 'Courier New', monospace;
+}
+
+/* 中间分割线 - 模拟真实记分板的折痕 */
+.flip-digit::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(80, 80, 80, 0.6) 20%,
+    rgba(120, 120, 120, 0.8) 50%,
+    rgba(80, 80, 80, 0.6) 80%,
+    transparent 100%
+  );
+  z-index: 20;
+  pointer-events: none;
+}
+
+.flip-digit-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* ===== 数字半区 ===== */
+.dh {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.dh-top {
+  top: 0;
+  background: linear-gradient(180deg, #202020 0%, #1a1a1a 100%);
+  border-radius: 10px 10px 0 0;
+}
+
+.dh-bottom {
+  bottom: 0;
+  background: linear-gradient(180deg, #141414 0%, #181818 100%);
+  border-radius: 0 0 10px 10px;
+}
+
+/* ===== 数字文字 ===== */
+.dt {
+  font-size: 100px;
+  font-weight: 900;
+  line-height: 140px;
+  color: #f0f0f0;
+  text-shadow:
+    0 0 8px rgba(240, 240, 240, 0.12),
+    0 0 16px rgba(240, 240, 240, 0.04);
+  user-select: none;
+}
+
+.dh-top .dt {
+  margin-top: 0;
+}
+
+.dh-bottom .dt {
+  margin-top: -70px;
+}
+
+/* ===== 翻页动画 ===== */
+.flip-anim-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.flip-card {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  backface-visibility: hidden;
+  background: #1a1a1a;
+}
+
+/* 上半翻页卡：旧数字翻下去 */
+.flip-card-top {
+  top: 0;
+  transform-origin: bottom center;
+  background: linear-gradient(180deg, #202020 0%, #1a1a1a 100%);
+  border-radius: 10px 10px 0 0;
+  animation: foldTop 0.22s ease-in forwards;
+}
+
+.flip-card-top .dt {
+  margin-top: 0;
+}
+
+/* 下半翻页卡：新数字翻上来 */
+.flip-card-bottom {
+  bottom: 0;
+  transform-origin: top center;
+  transform: rotateX(90deg);
+  background: linear-gradient(180deg, #141414 0%, #181818 100%);
+  border-radius: 0 0 10px 10px;
+  animation: foldBottom 0.22s ease-out 0.22s forwards;
+}
+
+.flip-card-bottom .dt {
+  margin-top: -70px;
+}
+
+@keyframes foldTop {
+  0% {
+    transform: rotateX(0deg);
+  }
+  100% {
+    transform: rotateX(-90deg);
+  }
+}
+
+@keyframes foldBottom {
+  0% {
+    transform: rotateX(90deg);
+  }
+  100% {
+    transform: rotateX(0deg);
+  }
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 600px) {
+  .flip-digit {
+    width: 70px;
+    height: 100px;
+  }
+  .dt {
+    font-size: 70px;
+    line-height: 100px;
+  }
+  .dh-top .dt {
+    margin-top: 0;
+  }
+  .dh-bottom .dt {
+    margin-top: -50px;
+  }
+  .flip-card-top .dt {
+    margin-top: 0;
+  }
+  .flip-card-bottom .dt {
+    margin-top: -50px;
+  }
+}
