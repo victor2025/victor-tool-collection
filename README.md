@@ -17,6 +17,7 @@
 |------|------|--------|------|
 | 🔣 **Base64 编解码** | `/base64/` | 纯静态 HTML/CSS/JS | UTF-8 Base64 双向同步编解码，一键复制 |
 | 📱 **二维码工具** | `/qrcode/` | 纯静态 HTML/CSS/JS + 第三方库 | 生成二维码、从图片扫码、调用摄像头扫码 |
+| 🔐 **JWT 解码** | `/jwt-decoder/` | 纯静态 HTML/CSS/JS | 解析 JWT Header/Payload，识别注册声明，过期校验 |
 | 🖥 **WebShell 终端** | `/webshell/` | ttyd + webshell-wrapper + su/SSH | 本地终端输入系统密码 · SSH 连接使用 SSH 账密 |
 
 ### 娱乐工具集
@@ -37,6 +38,7 @@ victor-tool-collection/
 │   └── index.html           # 导航首页（端口 8001 根目录）
 ├── tools/
 │   ├── base64/              # Base64 编解码工具
+│   ├── jwt-decoder/         # JWT 解码工具
 │   ├── qrcode/              # 二维码工具
 │   ├── score-board/         # 记分板（React）
 │   └── webshell/            # Web 终端（ttyd）

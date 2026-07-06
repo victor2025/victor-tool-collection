@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JWT 解码</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      background: #000;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 30px 20px;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.015) 0%, transparent 60%),
+        #000;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 24px; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: #555; text-decoration: none; font-size: 13px;
+      margin-bottom: 16px; transition: color 0.2s;
+    }
+    .back-link:hover { color: #4ecdc4; }
+    .header h1 {
+      font-size: 24px; font-weight: 700; letter-spacing: 3px;
+      color: #ddd; margin-bottom: 4px;
+    }
+    .header .sub { font-size: 13px; color: #555; }
+
+    .card {
+      background: linear-gradient(135deg, #111 0%, #151515 100%);
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 13px; font-weight: 600; color: #888;
+      margin-bottom: 12px; letter-spacing: 1px;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 14px;
+      background: #0d0d0d;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-size: 13px;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      outline: none;
+      resize: vertical;
+      transition: border-color 0.2s;
+      line-height: 1.5;
+    }
+    textarea:focus { border-color: #4ecdc4; }
+    textarea::placeholder { color: #444; }
+
+    .parts-row {
+      display: flex;
+      gap: 8px;
+      margin: 12px 0 16px;
+      flex-wrap: wrap;
+    }
+    .part-badge {
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      font-family: monospace;
+    }
+    .part-header { background: #2a2820; color: #ffd93d; }
+    .part-payload { background: #1a2a28; color: #4ecdc4; }
+    .part-signature { background: #1e1e2e; color: #c9a0dc; }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 640px) {
+      .result-grid { grid-template-columns: 1fr; }
+    }
+
+    .result-panel { min-height: 0; }
+    .result-panel .panel-label {
+      font-size: 12px; color: #666; margin-bottom: 6px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .result-panel .panel-label .copy-btn {
+      font-size: 11px; color: #555; cursor: pointer;
+      background: none; border: none; padding: 0;
+      transition: color 0.2s;
+    }
+    .result-panel .panel-label .copy-btn:hover { color: #4ecdc4; }
+
+    pre {
+      background: #0a0a0a;
+      border: 1px solid #222;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      min-height: 80px;
+      color: #aaa;
+    }
+    pre .key { color: #7ec8e3; }
+    pre .str { color: #a5d6a7; }
+    pre .num { color: #ffab91; }
+    pre .bool { color: #ce93d8; }
+    pre .null { color: #888; }
+    pre .bracket { color: #888; }
+
+    .claims-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 12px;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+    .claims-grid .claim-key {
+      color: #888; text-align: right;
+      font-family: monospace;
+    }
+    .claims-grid .claim-val {
+      color: #e0e0e0;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+    .claims-grid .claim-val.expired { color: #ef5350; }
+    .claims-grid .claim-val.valid { color: #66bb6a; }
+
+    .error-msg {
+      color: #ef5350;
+      font-size: 13px;
+      padding: 8px 0;
+      display: none;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 12px;
+      color: #333;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">← 返回工具集</a>
+    <div class="header">
+      <h1>🔐 JWT 解码</h1>
+      <div class="sub">解析 JSON Web Token · 仅浏览器本地处理</div>
+    </div>
+
+    <!-- 输入 -->
+    <div class="card">
+      <div class="card-title">📝 JWT Token</div>
+      <textarea id="jwtInput" rows="4" placeholder="粘贴 JWT 令牌到此处...
+如：eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"></textarea>
+      <div class="parts-row" id="partsRow">
+        <span class="part-badge part-header">Header</span>
+        <span class="part-badge part-payload">Payload</span>
+        <span class="part-badge part-signature">Signature</span>
+      </div>
+      <div class="error-msg" id="errorMsg"></div>
+    </div>
+
+    <!-- 解码结果 -->
+    <div class="card">
+      <div class="card-title">🔍 解码结果</div>
+      <div class="result-grid">
+        <div class="result-panel">
+          <div class="panel-label">
+            <span>HEADER</span>
+            <button class="copy-btn" data-target="headerJson">📋 复制</button>
+          </div>
+          <pre id="headerJson">等待输入...</pre>
+        </div>
+        <div class="result-panel">
+          <div class="panel-label">
+            <span>PAYLOAD</span>
+            <button class="copy-btn" data-target="payloadJson">📋 复制</button>
+          </div>
+          <pre id="payloadJson">等待输入...</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 公共声明 -->
+    <div class="card" id="claimsCard" style="display:none">
+      <div class="card-title">📋 注册声明 (Registered Claims)</div>
+      <div class="claims-grid" id="claimsGrid"></div>
+    </div>
+
+    <div class="footer">
+      所有解析在浏览器本地完成 · Token 不会发送到服务端
+    </div>
+  </div>
+
+  <script>
+    const jwtInput = document.getElementById('jwtInput');
+    const headerPre = document.getElementById('headerJson');
+    const payloadPre = document.getElementById('payloadJson');
+    const errorMsg = document.getElementById('errorMsg');
+    const claimsCard = document.getElementById('claimsCard');
+    const claimsGrid = document.getElementById('claimsGrid');
+    const partsRow = document.getElementById('partsRow');
+
+    // Base64 URL-safe decode
+    function base64UrlDecode(str) {
+      // Replace URL-safe chars
+      let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+      // Pad with =
+      while (base64.length % 4) base64 += '=';
+      try {
+        return decodeURIComponent(atob(base64).split('').map(c =>
+          '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join(''));
+      } catch {
+        return atob(base64);
+      }
+    }
+
+    function formatJson(obj) {
+      const json = JSON.stringify(obj, null, 2);
+      return syntaxHighlight(json);
+    }
+
+    function syntaxHighlight(json) {
+      return json
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"([^"]+)":/g, '<span class="key">"$1"</span>:')
+        .replace(/: "([^"]+)"/g, ': <span class="str">"$1"</span>')
+        .replace(/: (\d+\.?\d*)/g, ': <span class="num">$1</span>')
+        .replace(/: (true|false)/g, ': <span class="bool">$1</span>')
+        .replace(/: null/g, ': <span class="null">null</span>')
+        .replace(/[{}\[\]]/g, '<span class="bracket">$&</span>');
+    }
+
+    function renderClaims(payload) {
+      const knownClaims = {
+        iss: 'Issuer (签发者)',
+        sub: 'Subject (主题)',
+        aud: 'Audience (受众)',
+        exp: 'Expiration Time (过期时间)',
+        nbf: 'Not Before (生效时间)',
+        iat: 'Issued At (签发时间)',
+        jti: 'JWT ID'
+      };
+
+      let html = '';
+      let hasClaims = false;
+
+      for (const [key, label] of Object.entries(knownClaims)) {
+        if (payload[key] !== undefined) {
+          hasClaims = true;
+          let val = payload[key];
+          let extra = '';
+          let cls = '';
+
+          if (key === 'exp' || key === 'nbf' || key === 'iat') {
+            const d = new Date(val * 1000);
+            const now = Date.now() / 1000;
+            extra = `<span style="color:#666;font-size:11px"> (${d.toLocaleString()})</span>`;
+            if (key === 'exp' && val < now) cls = 'expired';
+            else if (key === 'exp' && val >= now) cls = 'valid';
+          }
+
+          html += `<div class="claim-key">${key}</div>`
+            + `<div class="claim-val ${cls}">${val}${extra}</div>`;
+        }
+      }
+
+      claimsGrid.innerHTML = hasClaims ? html : '<div style="color:#555;grid-column:1/-1;padding:8px 0">无标准注册声明</div>';
+      claimsCard.style.display = hasClaims ? 'block' : 'none';
+    }
+
+    function parseJwt() {
+      const token = jwtInput.value.trim();
+      if (!token) {
+        headerPre.innerHTML = '等待输入...';
+        payloadPre.innerHTML = '等待输入...';
+        errorMsg.style.display = 'none';
+        claimsCard.style.display = 'none';
+        partsRow.querySelectorAll('.part-badge').forEach(b => b.style.opacity = '0.4');
+        return;
+      }
+
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        errorMsg.textContent = '⚠️ 无效的 JWT 格式：需要三段式 token (header.payload.signature)';
+        errorMsg.style.display = 'block';
+        return;
+      }
+      errorMsg.style.display = 'none';
+
+      const [headerB64, payloadB64, sigB64] = parts;
+
+      // Highlight parts
+      const badges = partsRow.querySelectorAll('.part-badge');
+      if (badges.length >= 3) {
+        const lens = [headerB64.length > 30, payloadB64.length > 30, sigB64.length > 30];
+        badges.forEach((b, i) => {
+          b.style.opacity = '1';
+          b.textContent = b.textContent.split(' (')[0] + ` (${parts[i].length} chars)`;
+        });
+      }
+
+      try {
+        const headerStr = base64UrlDecode(headerB64);
+        const payloadStr = base64UrlDecode(payloadB64);
+        const header = JSON.parse(headerStr);
+        const payload = JSON.parse(payloadStr);
+
+        headerPre.innerHTML = formatJson(header);
+        payloadPre.innerHTML = formatJson(payload);
+
+        renderClaims(payload);
+      } catch (e) {
+        errorMsg.textContent = '⚠️ 解码失败：' + e.message;
+        errorMsg.style.display = 'block';
+        headerPre.innerHTML = '解码错误';
+        payloadPre.innerHTML = '解码错误';
+        claimsCard.style.display = 'none';
+      }
+    }
+
+    // Copy buttons
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.dataset.target;
+        const el = document.getElementById(targetId);
+        const text = el.textContent || el.innerText;
+        navigator.clipboard.writeText(text).then(() => {
+          const orig = btn.textContent;
+          btn.textContent = '✅ 已复制';
+          setTimeout(() => btn.textContent = orig, 1200);
+        }).catch(() => {});
+      });
+    });
+
+    // Auto-parse on input
+    jwtInput.addEventListener('input', parseJwt);
+
+    // Initial parse if has content
+    parseJwt();
+  </script>
+</body>
+</html>
