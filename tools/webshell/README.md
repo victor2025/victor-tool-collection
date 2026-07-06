@@ -30,6 +30,25 @@ journalctl --user -u ttyd-webshell.service -f  # 查看日志
 
 ## 使用
 
+- **认证**：访问 `/webshell/` 或 `/webshell/term/` 时，浏览器会弹出登录框
+  - 使用 Linux 系统用户名和密码登录（如 `pi` 用户的密码）
+  - 认证通过 nginx PAM 模块直接对接系统 `/etc/shadow`
 - **本地终端**：访问 `/webshell/term/`，直接进入树莓派的 shell
 - **SSH 连接**：在 `/webshell/` 页面填写主机/端口/用户名，自动打开 SSH 连接
 - 最近连接记录存储在浏览器 localStorage 中
+
+## 变更密码
+
+修改 Linux 用户密码后，新密码会自动生效（PAM 直接对接系统认证）：
+
+```bash
+passwd pi  # 修改 pi 用户密码
+```
+
+## 架构
+
+```
+浏览器 → nginx (:8001) → [PAM 系统认证] → ttyd (:8022 loopback) → /bin/bash
+                        auth_pam: nginx     -W no-auth (loopback only)
+                        service
+```
