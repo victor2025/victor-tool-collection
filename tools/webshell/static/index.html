@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WebShell - SSH 终端</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 20px;
+    }
+    .container { max-width: 720px; width: 100%; }
+
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .header h1 { font-size: 26px; font-weight: 700; color: #4ecdc4; margin-bottom: 4px; }
+    .header .sub { font-size: 13px; color: #555; letter-spacing: 1px; }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #555;
+      text-decoration: none;
+      font-size: 13px;
+      margin-bottom: 20px;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: #4ecdc4; }
+
+    .card {
+      background: linear-gradient(135deg, #111 0%, #151515 100%);
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #888;
+      margin-bottom: 16px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .form-group {
+      flex: 1;
+      min-width: 140px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+      letter-spacing: 0.5px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-size: 14px;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus { border-color: #4ecdc4; }
+    .form-group input::placeholder { color: #444; }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: #4ecdc4;
+      color: #0a0a0a;
+    }
+    .btn-primary:hover { background: #45b8b0; transform: translateY(-1px); }
+    .btn-secondary {
+      background: #222;
+      color: #ccc;
+    }
+    .btn-secondary:hover { background: #2a2a2a; }
+
+    .btn-local {
+      background: #1a2a28;
+      color: #4ecdc4;
+      border: 1px solid #2a3a38;
+    }
+    .btn-local:hover { background: #1e3228; border-color: #4ecdc4; }
+
+    .info-box {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #555;
+      line-height: 1.6;
+      border-left: 3px solid #333;
+    }
+    .info-box kbd {
+      background: #222;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+      color: #aaa;
+      font-family: monospace;
+    }
+
+    .recent-hosts { margin-top: 16px; }
+    .recent-hosts-title {
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+    .host-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      background: #1a1a1a;
+      border: 1px solid #222;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: monospace;
+      color: #888;
+      cursor: pointer;
+      margin: 0 6px 6px 0;
+      transition: all 0.2s;
+    }
+    .host-chip:hover {
+      border-color: #4ecdc4;
+      color: #4ecdc4;
+      background: #1a2a28;
+    }
+    .host-chip .remove {
+      font-size: 10px;
+      color: #444;
+      cursor: pointer;
+    }
+    .host-chip .remove:hover { color: #ff6b6b; }
+
+    .empty-hosts {
+      font-size: 12px;
+      color: #333;
+      font-style: italic;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 16px;
+      border-top: 1px solid #111;
+      font-size: 12px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">← 返回工具集</a>
+
+    <div class="header">
+      <h1>🖥 WebShell</h1>
+      <div class="sub">Web 终端 · SSH 远程连接</div>
+    </div>
+
+    <!-- SSH 快速连接 -->
+    <div class="card">
+      <div class="card-title">🔌 SSH 快速连接</div>
+      <form id="sshForm">
+        <div class="form-row">
+          <div class="form-group" style="flex: 2;">
+            <label for="host">主机地址</label>
+            <input type="text" id="host" placeholder="example.com 或 192.168.x.x" required/>
+          </div>
+          <div class="form-group" style="flex: 0 0 100px;">
+            <label for="port">端口</label>
+            <input type="number" id="port" placeholder="22" value="22" min="1" max="65535"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="user">用户名</label>
+            <input type="text" id="user" placeholder="root" value="root"/>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">🔗 连接 SSH</button>
+          <button type="button" class="btn btn-local" id="localShellBtn">⌨️ 本地终端</button>
+        </div>
+      </form>
+
+      <div class="recent-hosts" id="recentHosts">
+        <div class="recent-hosts-title">📋 最近连接</div>
+        <div id="hostList"></div>
+      </div>
+
+      <div class="info-box">
+        <strong>💡 提示：</strong><br/>
+        · SSH 连接需要服务端配置好密钥或密码认证<br/>
+        · 连接后密码认证在终端中直接输入密码即可<br/>
+        · 使用 <kbd>Ctrl+D</kbd> 或输入 <kbd>exit</kbd> 断开连接<br/>
+        · 本地终端可直接在服务器上执行命令
+      </div>
+    </div>
+
+    <div class="footer">
+      WebShell · 基于 ttyd + xterm.js
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'webshell_recent_hosts';
+    const TERM_URL = location.pathname.replace(/\/+$/, '') + '/term/';
+
+    function getRecentHosts() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      } catch { return []; }
+    }
+
+    function saveRecentHosts(hosts) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(hosts.slice(0, 10)));
+      } catch {}
+    }
+
+    function addRecentHost(host, port, user) {
+      const hosts = getRecentHosts().filter(h => !(h.host === host && h.port === port));
+      hosts.unshift({ host, port, user });
+      saveRecentHosts(hosts);
+      renderRecentHosts();
+    }
+
+    function removeRecentHost(index) {
+      const hosts = getRecentHosts();
+      hosts.splice(index, 1);
+      saveRecentHosts(hosts);
+      renderRecentHosts();
+    }
+
+    function renderRecentHosts() {
+      const list = document.getElementById('hostList');
+      const hosts = getRecentHosts();
+      if (hosts.length === 0) {
+        list.innerHTML = '<span class="empty-hosts">暂无记录</span>';
+        return;
+      }
+      list.innerHTML = hosts.map((h, i) =>
+        `<span class="host-chip" data-index="${i}">
+          ${h.user}@${h.host}:${h.port}
+          <span class="remove" data-index="${i}">✕</span>
+        </span>`
+      ).join('');
+
+      list.querySelectorAll('.host-chip').forEach(chip => {
+        chip.addEventListener('click', (e) => {
+          if (e.target.classList.contains('remove')) return;
+          const idx = parseInt(chip.dataset.index);
+          const h = getRecentHosts()[idx];
+          if (h) openSshTerminal(h.host, h.port, h.user);
+        });
+      });
+      list.querySelectorAll('.remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          removeRecentHost(parseInt(btn.dataset.index));
+        });
+      });
+    }
+
+    function openSshTerminal(host, port, user) {
+      addRecentHost(host, port, user);
+      const target = user ? `${user}@${host}` : host;
+      const termUrl = `${TERM_URL}?arg=ssh&arg=-p&arg=${port}&arg=${target}`;
+      window.open(termUrl, '_blank');
+    }
+
+    function openLocalTerminal() {
+      window.open(TERM_URL, '_blank');
+    }
+
+    // 表单提交
+    document.getElementById('sshForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const host = document.getElementById('host').value.trim();
+      const port = document.getElementById('port').value.trim() || '22';
+      const user = document.getElementById('user').value.trim() || 'root';
+      if (!host) return;
+      openSshTerminal(host, port, user);
+    });
+
+    document.getElementById('localShellBtn').addEventListener('click', openLocalTerminal);
+
+    // 回车快速跳转
+    document.querySelectorAll('#sshForm input').forEach(inp => {
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') document.getElementById('sshForm').requestSubmit();
+      });
+    });
+
+    // 初始化最近连接
+    renderRecentHosts();
+  </script>
+</body>
+</html>
