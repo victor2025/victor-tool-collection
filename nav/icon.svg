@@ -6,6 +6,7 @@
  <stop offset="1" stop-color="#3a434d"/>
  </linearGradient>
  </defs>
+ <g transform="translate(128,0) scale(-1,1)">
  <path
  d="M92.5 12.5
  a26 26 0 0 0 -25.2 43.6
@@ -23,4 +24,5 @@
  stroke-width="3"
  stroke-linejoin="round"/>
  <circle cx="30" cy="107" r="3.5" fill="#2c343c"/>
+ </g>
 </svg>
