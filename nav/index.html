@@ -37,6 +37,8 @@
       color: #e0e0e0; background: #0a0a0a;
       box-shadow: inset 0 -2px 0 #4ecdc4;
     }
+    .tab.dragging { opacity: 0.3; }
+    .tab.drag-over { border-color: #ffd93d; box-shadow: inset 0 -2px 0 #ffd93d; }
     .tab .tab-close {
       font-size: 10px; color: #333; padding: 2px; border-radius: 3px;
       transition: color 0.15s; line-height: 1;
@@ -669,10 +671,12 @@
       const tabEl = document.createElement('div');
       tabEl.className = 'tab';
       tabEl.dataset.tab = tabId;
+      tabEl.draggable = false; // draggable set after append
       tabEl.innerHTML = `<span class="tab-icon">${tool.icon}</span><span>${tool.name}</span><span class="tab-close">✕</span>`;
       tabEl.addEventListener('click', () => switchTab(tabId));
       tabEl.querySelector('.tab-close').addEventListener('click', (e) => closeTab(tabId, e));
       dom.tabBar.appendChild(tabEl);
+      makeTabDraggable(tabEl, tabId);
       tabEl.scrollIntoView({ behavior: 'smooth', inline: 'end', block: 'nearest' });
       switchTab(tabId);
       saveTabs();
@@ -685,6 +689,69 @@
       dom.paneIframe.classList.remove('active');
       dom.tabBar.querySelector('.tab[data-tab="home"]')?.classList.add('active');
       activeTabId = 'home';
+    }
+
+    // ===== Tab 拖拽排序 =====
+    let dragTabId = null;
+
+    function makeTabDraggable(tabEl, tabId) {
+      if (tabId === 'home') return;
+      tabEl.draggable = true;
+
+      tabEl.addEventListener('dragstart', (e) => {
+        dragTabId = tabId;
+        tabEl.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', tabId);
+      });
+
+      tabEl.addEventListener('dragend', () => {
+        tabEl.classList.remove('dragging');
+        document.querySelectorAll('.tab.drag-over').forEach(el => el.classList.remove('drag-over'));
+        dragTabId = null;
+      });
+
+      tabEl.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      });
+
+      tabEl.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        if (tabEl.dataset.tab !== dragTabId && tabEl.dataset.tab !== 'home') {
+          tabEl.classList.add('drag-over');
+        }
+      });
+
+      tabEl.addEventListener('dragleave', () => {
+        tabEl.classList.remove('drag-over');
+      });
+
+      tabEl.addEventListener('drop', (e) => {
+        e.preventDefault();
+        tabEl.classList.remove('drag-over');
+        if (!dragTabId || dragTabId === tabEl.dataset.tab || tabEl.dataset.tab === 'home') return;
+
+        const fromIdx = tabs.findIndex(t => t.id === dragTabId);
+        const toEl = tabEl;
+        const toIdx = tabs.findIndex(t => t.id === toEl.dataset.tab);
+        if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return;
+
+        // 移动 tab 数据
+        const [moved] = tabs.splice(fromIdx, 1);
+        tabs.splice(toIdx, 0, moved);
+
+        // 移动 DOM 元素
+        const fromEl = dom.tabBar.querySelector(`.tab[data-tab="${dragTabId}"]`);
+        if (fromEl && toEl) {
+          if (toIdx > fromIdx) {
+            toEl.after(fromEl);
+          } else {
+            toEl.before(fromEl);
+          }
+        }
+        saveTabs();
+      });
     }
 
     function hideIframeBackLinks() {
@@ -701,10 +768,7 @@
         const tool = TOOLS.find(t => t.slug === slug);
         if (tool) openToolTab(tool);
       });
-      if (saved.active && saved.active !== 'home') {
-        const target = tabs.find(t => t.id === saved.active);
-        if (target) switchTab(saved.active);
-      }
+      // 刷新后始终切回首页
     }
 
     // ===== 区块折叠 =====
