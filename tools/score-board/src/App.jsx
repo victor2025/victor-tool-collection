@@ -42,6 +42,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <a href="/" className="back-link">← 返回工具集</a>
       <ScoreBoard
         teamA={teamA}
         teamB={teamB}
