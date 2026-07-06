@@ -1,0 +1,79 @@
+# AGENTS.md — Victor Tool Collection 项目规范
+
+> 此文件面向 AI Agent 和工作协作者，说明项目维护规则。
+
+## 📌 核心规则
+
+### 每次修改项目 → 必须更新 README.md
+
+凡是对本项目做出以下任何变更后，**必须同步更新项目根目录的 `README.md`**：
+
+- 新增、删除或重命名工具模块
+- 更换技术栈或构建方式
+- 变更项目结构或目录约定
+- 修改部署方式或 nginx 配置
+- 新增外部依赖或运行时要求
+
+### 每个模块 → 必须有自己的 README.md
+
+`tools/` 下的每一个工具子目录，都必须包含一个 `README.md`，至少说明：
+
+- 该工具的用途和功能
+- 技术栈（框架、语言、库）
+- 构建与部署方式
+- 目录结构说明
+
+修改某个模块后，必须同步更新其模块 `README.md`。
+
+### 每次 Git 提交前 → 检查 README 一致性
+
+在每次执行 `git commit` 之前，**必须先确认以下文件已同步更新**：
+
+- 本次变更涉及了哪些模块？对应的 `tools/<模块>/README.md` 是否已更新？
+- 项目结构或工具有变化？根目录 `README.md` 是否已更新？
+- 部署方式或 nginx 配置有变化？`deploy/README.md` 是否已更新？
+
+> 📌 提交信息中若涉及某模块的变更，该模块的 README.md 必须同步反映最新状态。
+
+### 已有 README.md 的模块
+
+- `tools/webshell/README.md` — 已有较完整文档，维护时需同步更新
+- `deploy/README.md` — 部署说明文档，有变更时应同步更新
+
+---
+
+## 📂 项目结构
+
+```
+victor-tool-collection/
+├── AGENTS.md          ← 本文件（项目规范）
+├── README.md          ← 项目总介绍（必须保持最新）
+├── nav/               ← 导航页
+│   └── index.html
+├── tools/             ← 工具模块（每个子目录必须有 README.md）
+│   ├── base64/        Base64 编解码
+│   ├── qrcode/        二维码工具
+│   ├── score-board/   记分板 (React)
+│   └── webshell/      Web 终端 (ttyd)
+├── deploy/            ← 部署配置
+│   ├── README.md
+│   └── nginx/
+│       └── port-8001.conf
+```
+
+---
+
+## ✅ 提交前检查清单
+
+**每次 `git commit` 前**，走一遍这个清单：
+
+### 必做
+- [ ] 涉及变更的模块 `README.md` 已同步更新
+- [ ] 根目录 `README.md` 已同步更新（如项目结构、工具列表有变化）
+
+### 视情况
+- [ ] `nav/index.html` — 导航页是否需添加/修改入口
+- [ ] `deploy/README.md` — 部署说明是否需更新
+- [ ] `deploy/nginx/port-8001.conf` — nginx 配置是否已添加/修改
+
+> `AGENTS.md` 本身也记录了项目规范，如有更新也记得提交。
