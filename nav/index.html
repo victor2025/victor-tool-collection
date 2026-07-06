@@ -768,7 +768,7 @@
         const tool = TOOLS.find(t => t.slug === slug);
         if (tool) openToolTab(tool);
       });
-      // 刷新后始终切回首页
+      switchTab('home');
     }
 
     // ===== 区块折叠 =====
