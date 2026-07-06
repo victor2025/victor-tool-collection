@@ -59,7 +59,8 @@
     .view-btn:hover:not(.active) { color: #888; }
 
     /* ===== 区块标题 ===== */
-    .section { margin-bottom: 28px; }
+    .section { margin-bottom: 48px; }
+    #allSection { margin-top: 32px; padding-top: 24px; border-top: 1px solid #1a1a1a; }
     .section-header {
       display: flex; align-items: center; gap: 10px;
       margin-bottom: 12px; padding-bottom: 8px;
@@ -172,6 +173,54 @@
     .tool-grid .tool-card { position: relative; }
     .tool-grid .fav-card .tool-name { max-width: calc(100% - 30px); }
 
+    /* ===== 分类标签 ===== */
+    .cat-tabs {
+      display: flex; gap: 4px; margin-bottom: 12px;
+      background: #111; border-radius: 10px; border: 1px solid #1a1a1a; padding: 3px;
+      flex-wrap: wrap;
+    }
+    .cat-tab {
+      padding: 7px 14px; border: none; border-radius: 7px;
+      background: transparent; color: #555; font-size: 13px; cursor: pointer;
+      transition: all 0.15s; font-family: inherit;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .cat-tab:hover { color: #888; }
+    .cat-tab.active {
+      background: #1a1a1a; color: #e0e0e0;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    .cat-tab .tab-count {
+      font-size: 10px; color: #444; margin-left: 2px;
+    }
+    .cat-tab.active .tab-count { color: #666; }
+
+    /* ===== 收起/展开 ===== */
+    .section-header { cursor: pointer; user-select: none; }
+    .section-header .collapse-icon {
+      font-size: 12px; color: #444; margin-left: 4px; transition: transform 0.2s;
+      display: inline-block;
+    }
+    .section-header .collapse-icon.collapsed {
+      transform: rotate(-90deg);
+    }
+    .section-header:hover .collapse-icon { color: #666; }
+    .section-body.collapsed { display: none !important; }
+
+    /* ===== 页脚 ===== */
+    .footer {
+      text-align: center; margin-top: 48px; padding-top: 20px;
+      border-top: 1px solid #111;
+      font-size: 13px; color: #444; letter-spacing: 1px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .footer a {
+      color: #555; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
+      transition: color 0.2s;
+    }
+    .footer a:hover { color: #4ecdc4; }
+    .footer .sep { color: #222; }
+
     /* ===== 显示隐藏 ===== */
     .hidden { display: none !important; }
 
@@ -188,7 +237,7 @@
   <div class="container">
     <div class="header">
       <h1>🧰 Victor Tool Collection</h1>
-      <div class="sub">localhost:8001</div>
+      <div class="sub">tools.victor2022.dpdns.org</div>
     </div>
 
     <!-- 搜索 -->
@@ -205,23 +254,37 @@
 
     <!-- 收藏的工具 -->
     <div class="section" id="favSection">
-      <div class="section-header">
+      <div class="section-header" data-section="fav">
         <span class="label">⭐ 收藏的工具</span>
+        <span class="collapse-icon">▼</span>
         <span class="count" id="favCount"></span>
         <div class="line"></div>
       </div>
-      <div id="favContainer"></div>
+      <div class="section-body" id="favBody">
     </div>
 
     <!-- 全部工具 -->
     <div class="section" id="allSection">
-      <div class="section-header">
+      <div class="section-header" data-section="all">
         <span class="label">📦 全部工具</span>
+        <span class="collapse-icon">▼</span>
         <span class="count" id="allCount"></span>
         <div class="line"></div>
       </div>
-      <div id="allContainer"></div>
+      <div class="section-body" id="allBody">
+        <div class="cat-tabs" id="catTabs"></div>
+        <div id="allList"></div>
+      </div>
     </div>
+  </div>
+
+  <div class="footer">
+    <a href="https://github.com/victor2025/victor-tool-collection" target="_blank" rel="noopener">
+      <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub
+    </a>
+    <span class="sep">·</span>
+    <span>Victor Tool Collection</span>
   </div>
 
   <script>
@@ -237,19 +300,38 @@
 
     const LS_FAV = 'vtc_favorites';
     const LS_VIEW = 'vtc_view';
+    const LS_CAT = 'vtc_category';
+    const LS_COLLAPSE = 'vtc_collapse';
+
+    // ===== 分类定义 =====
+    const CATEGORIES = [
+      { id: 'all',  label: '全部',   icon: '📦' },
+      { id: 'dev',  label: '开发工具', icon: '🛠' },
+      { id: 'fun',  label: '娱乐工具', icon: '🎮' },
+    ];
 
     // ===== 状态 =====
     let favorites = [];
     let viewMode = 'list';
     let searchQuery = '';
+    let activeCategory = 'all';
     let dragSrcIndex = -1;
 
     // ===== DOM =====
-    const $favContainer = document.getElementById('favContainer');
-    const $allContainer = document.getElementById('allContainer');
+    const $favBody = document.getElementById('favBody');
+    const $allBody = document.getElementById('allBody');
     const $favCount = document.getElementById('favCount');
     const $allCount = document.getElementById('allCount');
     const $searchInput = document.getElementById('searchInput');
+
+    // ===== localStorage =====
+    let collapseState = {};
+    function loadCollapse() {
+      try { const r = localStorage.getItem(LS_COLLAPSE); if (r) collapseState = JSON.parse(r); } catch {}
+    }
+    function saveCollapse() {
+      localStorage.setItem(LS_COLLAPSE, JSON.stringify(collapseState));
+    }
 
     // ===== localStorage =====
     function loadFavorites() {
@@ -264,6 +346,13 @@
     }
     function saveView() {
       localStorage.setItem(LS_VIEW, viewMode);
+    }
+
+    function loadCategory() {
+      try { const r = localStorage.getItem(LS_CAT); if (r) activeCategory = r; } catch {}
+    }
+    function saveCategory() {
+      localStorage.setItem(LS_CAT, activeCategory);
     }
 
     // ===== 工具操作 =====
@@ -292,13 +381,24 @@
 
     // ===== 过滤 =====
     function getFilteredTools() {
-      if (!searchQuery.trim()) return TOOLS;
-      const q = searchQuery.trim().toLowerCase();
-      return TOOLS.filter(t =>
-        t.name.toLowerCase().includes(q) ||
-        t.desc.toLowerCase().includes(q) ||
-        t.tags.some(tag => tag.toLowerCase().includes(q))
-      );
+      let list = TOOLS;
+
+      // 分类过滤
+      if (activeCategory !== 'all') {
+        list = list.filter(t => t.category === activeCategory);
+      }
+
+      // 搜索过滤
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        list = list.filter(t =>
+          t.name.toLowerCase().includes(q) ||
+          t.desc.toLowerCase().includes(q) ||
+          t.tags.some(tag => tag.toLowerCase().includes(q))
+        );
+      }
+
+      return list;
     }
 
     function getFavTools() {
@@ -339,26 +439,41 @@
       const favTools = getFavTools();
       const isGrid = viewMode === 'grid';
 
+      // 渲染分类标签
+      function renderCatTabs() {
+        const $catTabs = document.getElementById('catTabs');
+        if (!$catTabs) return;
+        $catTabs.innerHTML = CATEGORIES.map(cat => {
+          const count = cat.id === 'all'
+            ? TOOLS.length
+            : TOOLS.filter(t => t.category === cat.id).length;
+          return `<button class="cat-tab ${activeCategory === cat.id ? 'active' : ''}" data-cat="${cat.id}">
+            ${cat.icon} ${cat.label} <span class="tab-count">${count}</span>
+          </button>`;
+        }).join('');
+
+        $catTabs.querySelectorAll('.cat-tab').forEach(el => {
+          el.addEventListener('click', () => {
+            activeCategory = el.dataset.cat;
+            saveCategory();
+            render();
+          });
+        });
+      }
+
       // 收藏的
       if (favTools.length > 0) {
         const cards = favTools.map((t, i) => renderCard(t, true, i)).join('');
-        $favContainer.innerHTML = isGrid
+        $favBody.innerHTML = isGrid
           ? `<div class="tool-grid active">${cards}</div>`
           : `<div class="tool-list">${cards}</div>`;
         $favCount.textContent = `(${favTools.length})`;
 
         // 绑定收藏拖动
-        if (isGrid) {
-          $favContainer.querySelector('.tool-grid').querySelectorAll('.tool-card').forEach(el => {
-            bindDrag(el);
-          });
-        } else {
-          $favContainer.querySelector('.tool-list').querySelectorAll('.tool-card').forEach(el => {
-            bindDrag(el);
-          });
-        }
+        const listEl = $favBody.querySelector(isGrid ? '.tool-grid' : '.tool-list');
+        if (listEl) listEl.querySelectorAll('.tool-card').forEach(el => bindDrag(el));
       } else {
-        $favContainer.innerHTML = `
+        $favBody.innerHTML = `
           <div class="section-empty">
             ⭐ 还没有收藏的工具
             <div class="hint">在下方工具列表点击 ☆ 即可收藏</div>
@@ -368,21 +483,25 @@
       }
 
       // 全部工具
-      if (filtered.length > 0) {
-        const cards = filtered.map(t => renderCard(t, false)).join('');
-        $allContainer.innerHTML = isGrid
-          ? `<div class="tool-grid active">${cards}</div>`
-          : `<div class="tool-list">${cards}</div>`;
-        $allCount.textContent = `(${filtered.length})`;
-      } else {
-        $allContainer.innerHTML = `
-          <div class="section-empty">
-            🔍 没有匹配的工具
-            <div class="hint">试试其他关键词</div>
-          </div>
-        `;
-        $allCount.textContent = '(0)';
+      const $allList = document.getElementById('allList');
+      if ($allList) {
+        if (filtered.length > 0) {
+          const cards = filtered.map(t => renderCard(t, false)).join('');
+          $allList.innerHTML = isGrid
+            ? `<div class="tool-grid active">${cards}</div>`
+            : `<div class="tool-list">${cards}</div>`;
+        } else {
+          $allList.innerHTML = `
+            <div class="section-empty">
+              🔍 没有匹配的工具
+              <div class="hint">试试其他关键词</div>
+            </div>
+          `;
+        }
       }
+      $allCount.textContent = `(${filtered.length})`;
+
+      renderCatTabs();
 
       // 绑定收藏点击
       document.querySelectorAll('.tool-star').forEach(el => {
@@ -450,6 +569,19 @@
       });
     });
 
+    // ===== 收起/展开 =====
+    document.querySelectorAll('.section-header').forEach(header => {
+      header.addEventListener('click', () => {
+        const section = header.dataset.section;
+        const body = section === 'fav' ? $favBody : $allBody;
+        const icon = header.querySelector('.collapse-icon');
+        const isCollapsed = body.classList.toggle('collapsed');
+        icon.classList.toggle('collapsed', isCollapsed);
+        collapseState[section] = isCollapsed;
+        saveCollapse();
+      });
+    });
+
     // ===== 搜索 =====
     $searchInput.addEventListener('input', () => {
       searchQuery = $searchInput.value;
@@ -459,6 +591,16 @@
     // ===== 初始化 =====
     loadFavorites();
     loadView();
+    loadCategory();
+    loadCollapse();
+    // 应用保存的收起状态
+    Object.keys(collapseState).forEach(section => {
+      if (collapseState[section]) {
+        const body = section === 'fav' ? $favBody : $allBody;
+        body.classList.add('collapsed');
+        document.querySelector(`.section-header[data-section="${section}"] .collapse-icon`)?.classList.add('collapsed');
+      }
+    });
     // 激活保存的视图
     document.querySelectorAll('.view-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.view === viewMode);

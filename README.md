@@ -1,10 +1,10 @@
 # Victor Tool Collection 🧰
 
-> 一个轻量级的 Web 工具集，运行在树莓派的 `localhost:8001`，通过 nginx 提供便捷的本地开发工具和娱乐工具。
+> 一个轻量级的 Web 工具集，运行在树莓派上，通过 nginx 提供便捷的开发工具和娱乐工具。
 
 ## 快速访问
 
-- **地址**: `http://localhost:8001`
+- **地址**: [https://tools.victor2022.dpdns.org](https://tools.victor2022.dpdns.org)
 - **导航页**: `nav/index.html`（根目录）
 
 ---
