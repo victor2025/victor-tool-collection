@@ -11,11 +11,70 @@
       background: #0a0a0a;
       color: #e0e0e0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* ===== Tab 栏 ===== */
+    .tab-bar {
+      display: flex; align-items: center; overflow-x: auto; overflow-y: hidden;
+      background: #0d0d0d; border-bottom: 1px solid #1a1a1a;
+      padding: 0; position: sticky; top: 0; z-index: 200;
+      scrollbar-width: thin; scrollbar-color: #222 transparent;
+      min-height: 40px;
+    }
+    .tab-bar::-webkit-scrollbar { height: 3px; }
+    .tab-bar::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+    .tab {
+      display: flex; align-items: center; gap: 6px;
+      padding: 10px 16px; font-size: 13px; color: #555;
+      cursor: pointer; white-space: nowrap; user-select: none;
+      border-right: 1px solid #151515;
+      transition: all 0.15s; flex-shrink: 0;
+      position: relative;
+    }
+    .tab:hover { color: #888; background: #111; }
+    .tab.active {
+      color: #e0e0e0; background: #0a0a0a;
+      box-shadow: inset 0 -2px 0 #4ecdc4;
+    }
+    .tab .tab-close {
+      font-size: 10px; color: #333; padding: 2px; border-radius: 3px;
+      transition: color 0.15s; line-height: 1;
+    }
+    .tab .tab-close:hover { color: #ff6b6b; }
+    .tab:not(:first-child) .tab-close { display: inline-block; }
+    .tab:first-child .tab-icon { font-size: 16px; }
+    .tab .tab-icon { flex-shrink: 0; }
+
+    /* ===== 内容区 ===== */
+    .tab-content {
+      width: 100%;
+    }
+    .tab-pane {
+      display: none;
+    }
+    .tab-pane.active {
+      display: block;
+    }
+    #pane-home {
       padding: 30px 20px 40px;
       background:
         radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.015) 0%, transparent 60%),
         #0a0a0a;
     }
+    #pane-home .container { max-width: 800px; margin: 0 auto; }
+
+    .pane-iframe {
+      width: 100%; height: calc(100vh - 40px);
+      border: none; display: block; background: #0a0a0a;
+    }
+
+    .pane-loading {
+      display: flex; align-items: center; justify-content: center;
+      height: calc(100vh - 40px);
+      color: #333; font-size: 14px; letter-spacing: 1px;
+      background: #0a0a0a;
+    }
+
     .container { max-width: 800px; margin: 0 auto; }
 
     .header { text-align: center; margin-bottom: 20px; }
@@ -57,6 +116,48 @@
     }
     .view-btn.active { background: #222; color: #4ecdc4; }
     .view-btn:hover:not(.active) { color: #888; }
+
+    /* ===== 设置按钮 ===== */
+    .settings-wrap { position: relative; }
+    .settings-btn {
+      width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+      border: 1px solid #222; border-radius: 8px; background: #111;
+      color: #555; font-size: 16px; cursor: pointer;
+      transition: all 0.15s; font-family: inherit;
+    }
+    .settings-btn:hover { border-color: #4ecdc4; color: #4ecdc4; }
+
+    .settings-dropdown {
+      display: none; position: absolute; right: 0; top: calc(100% + 6px);
+      min-width: 200px;
+      background: #151515; border: 1px solid #222; border-radius: 10px;
+      padding: 8px; z-index: 300;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    }
+    .settings-dropdown.open { display: block; }
+
+    .setting-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: 6px; cursor: pointer;
+      font-size: 13px; color: #ccc; transition: background 0.15s;
+      user-select: none;
+    }
+    .setting-item:hover { background: #1a1a1a; }
+
+    .setting-item input[type="checkbox"] { display: none; }
+    .toggle-slider {
+      position: relative; width: 36px; height: 20px;
+      background: #333; border-radius: 10px;
+      transition: background 0.2s; flex-shrink: 0;
+      margin-left: auto;
+    }
+    .toggle-slider::after {
+      content: ''; position: absolute; top: 2px; left: 2px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #888; transition: all 0.2s;
+    }
+    .setting-item input:checked + .toggle-slider { background: #4ecdc444; }
+    .setting-item input:checked + .toggle-slider::after { left: 18px; background: #4ecdc4; }
 
     /* ===== 区块标题 ===== */
     .section { margin-bottom: 48px; }
@@ -190,9 +291,7 @@
       background: #1a1a1a; color: #e0e0e0;
       box-shadow: 0 1px 4px rgba(0,0,0,0.3);
     }
-    .cat-tab .tab-count {
-      font-size: 10px; color: #444; margin-left: 2px;
-    }
+    .cat-tab .tab-count { font-size: 10px; color: #444; margin-left: 2px; }
     .cat-tab.active .tab-count { color: #666; }
 
     /* ===== 收起/展开 ===== */
@@ -201,9 +300,7 @@
       font-size: 12px; color: #444; margin-left: 4px; transition: transform 0.2s;
       display: inline-block;
     }
-    .section-header .collapse-icon.collapsed {
-      transform: rotate(-90deg);
-    }
+    .section-header .collapse-icon.collapsed { transform: rotate(-90deg); }
     .section-header:hover .collapse-icon { color: #666; }
     .section-body.collapsed { display: none !important; }
 
@@ -225,7 +322,8 @@
     .hidden { display: none !important; }
 
     @media (max-width: 600px) {
-      body { padding: 20px 14px; }
+      body { padding: 0; }
+      #pane-home { padding: 20px 14px; }
       .header h1 { font-size: 22px; }
       .tool-grid { grid-template-columns: 1fr; }
       .search-bar { flex-wrap: wrap; }
@@ -234,10 +332,22 @@
   </style>
 </head>
 <body>
-  <div class="container">
+  <!-- ===== Tab 栏 ===== -->
+  <div class="tab-bar" id="tabBar">
+    <div class="tab active" data-tab="home">
+      <span class="tab-icon">🏠</span>
+      <span>首页</span>
+    </div>
+  </div>
+
+  <!-- ===== Tab 内容 ===== -->
+  <div class="tab-content">
+    <div class="tab-pane active" id="pane-home">
+      <div class="container">
     <div class="header">
       <h1>🧰 Victor Tool Collection</h1>
-      <div class="sub">tools.victor2022.dpdns.org</div>
+</div>
+      <div class="sub"></div>
     </div>
 
     <!-- 搜索 -->
@@ -249,6 +359,16 @@
       <div class="view-toggle">
         <button class="view-btn active" data-view="list" title="列表">☰</button>
         <button class="view-btn" data-view="grid" title="方格">▦</button>
+      </div>
+      <div class="settings-wrap">
+        <button class="settings-btn" id="settingsBtn" title="设置">⚙</button>
+        <div class="settings-dropdown" id="settingsDropdown">
+          <label class="setting-item">
+            <span>Tab 方式打开工具</span>
+            <input type="checkbox" id="tabModeToggle" checked/>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
       </div>
     </div>
 
@@ -277,6 +397,12 @@
       </div>
     </div>
   </div>
+</div>
+    <div class="tab-pane" id="pane-iframe">
+      <div class="pane-loading" id="paneLoading">加载中…</div>
+      <iframe class="pane-iframe" id="paneIframe" src="about:blank"></iframe>
+    </div>
+  </div>
 
   <div class="footer">
     <a href="https://github.com/victor2025/victor-tool-collection" target="_blank" rel="noopener">
@@ -298,11 +424,6 @@
       { slug: 'score-board',   name: '记分板',          desc: '可编辑队名 · 翻页动画 · 本地存储',              icon: '🏀', url: '/score-board/',   category: 'fun', tags: ['React'] },
     ];
 
-    const LS_FAV = 'vtc_favorites';
-    const LS_VIEW = 'vtc_view';
-    const LS_CAT = 'vtc_category';
-    const LS_COLLAPSE = 'vtc_collapse';
-
     // ===== 分类定义 =====
     const CATEGORIES = [
       { id: 'all',  label: '全部',   icon: '📦' },
@@ -310,63 +431,61 @@
       { id: 'fun',  label: '娱乐工具', icon: '🎮' },
     ];
 
+    // ===== localStorage 工具 =====
+    function lsGet(key, def) {
+      try { const r = localStorage.getItem(key); return r !== null ? JSON.parse(r) : def; } catch { return def; }
+    }
+    function lsSet(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+    function lsGetStr(key, def) {
+      try { const r = localStorage.getItem(key); return r !== null ? r : def; } catch { return def; }
+    }
+    function lsSetStr(key, val) { localStorage.setItem(key, val); }
+
     // ===== 状态 =====
-    let favorites = [];
-    let viewMode = 'list';
+    let favorites = lsGet('vtc_favorites', []);
+    let viewMode = lsGetStr('vtc_view', 'list');
     let searchQuery = '';
-    let activeCategory = 'all';
+    let activeCategory = lsGetStr('vtc_category', 'all');
+    let tabMode = lsGet('vtc_tabmode', true);
+    let collapseState = lsGet('vtc_collapse', {});
     let dragSrcIndex = -1;
+    let tabIdCounter = 0;
+    const tabs = [];
+    let activeTabId = 'home';
 
-    // ===== DOM =====
-    const $favBody = document.getElementById('favBody');
-    const $allBody = document.getElementById('allBody');
-    const $favCount = document.getElementById('favCount');
-    const $allCount = document.getElementById('allCount');
-    const $searchInput = document.getElementById('searchInput');
+    // ===== DOM 缓存 =====
+    const dom = {
+      favBody: document.getElementById('favBody'),
+      allBody: document.getElementById('allBody'),
+      favCount: document.getElementById('favCount'),
+      allCount: document.getElementById('allCount'),
+      searchInput: document.getElementById('searchInput'),
+      tabBar: document.getElementById('tabBar'),
+      paneHome: document.getElementById('pane-home'),
+      paneIframe: document.getElementById('pane-iframe'),
+      iframe: document.getElementById('paneIframe'),
+      loading: document.getElementById('paneLoading'),
+      catTabs: document.getElementById('catTabs'),
+      allList: document.getElementById('allList'),
+      settingsBtn: document.getElementById('settingsBtn'),
+      settingsDropdown: document.getElementById('settingsDropdown'),
+      tabModeToggle: document.getElementById('tabModeToggle'),
+    };
 
-    // ===== localStorage =====
-    let collapseState = {};
-    function loadCollapse() {
-      try { const r = localStorage.getItem(LS_COLLAPSE); if (r) collapseState = JSON.parse(r); } catch {}
-    }
-    function saveCollapse() {
-      localStorage.setItem(LS_COLLAPSE, JSON.stringify(collapseState));
-    }
-
-    // ===== localStorage =====
-    function loadFavorites() {
-      try { const r = localStorage.getItem(LS_FAV); favorites = r ? JSON.parse(r) : []; } catch { favorites = []; }
-    }
-    function saveFavorites() {
-      localStorage.setItem(LS_FAV, JSON.stringify(favorites));
-    }
-
-    function loadView() {
-      try { const r = localStorage.getItem(LS_VIEW); if (r === 'grid' || r === 'list') viewMode = r; } catch {}
-    }
-    function saveView() {
-      localStorage.setItem(LS_VIEW, viewMode);
-    }
-
-    function loadCategory() {
-      try { const r = localStorage.getItem(LS_CAT); if (r) activeCategory = r; } catch {}
-    }
-    function saveCategory() {
-      localStorage.setItem(LS_CAT, activeCategory);
-    }
+    // ===== 状态持久化 =====
+    function saveFavorites() { lsSet('vtc_favorites', favorites); }
+    function saveView() { lsSetStr('vtc_view', viewMode); }
+    function saveCategory() { lsSetStr('vtc_category', activeCategory); }
+    function saveCollapse() { lsSet('vtc_collapse', collapseState); }
+    function saveTabMode() { lsSet('vtc_tabmode', tabMode); }
+    function saveTabs() { lsSet('vtc_tabs', { slugs: tabs.map(t => t.slug), active: activeTabId }); }
 
     // ===== 工具操作 =====
-    function isFavorite(slug) {
-      return favorites.includes(slug);
-    }
+    function isFavorite(slug) { return favorites.includes(slug); }
 
     function toggleFavorite(slug) {
       const idx = favorites.indexOf(slug);
-      if (idx >= 0) {
-        favorites.splice(idx, 1);
-      } else {
-        favorites.push(slug);
-      }
+      idx >= 0 ? favorites.splice(idx, 1) : favorites.push(slug);
       saveFavorites();
       render();
     }
@@ -382,22 +501,15 @@
     // ===== 过滤 =====
     function getFilteredTools() {
       let list = TOOLS;
-
-      // 分类过滤
-      if (activeCategory !== 'all') {
-        list = list.filter(t => t.category === activeCategory);
-      }
-
-      // 搜索过滤
-      if (searchQuery.trim()) {
-        const q = searchQuery.trim().toLowerCase();
+      if (activeCategory !== 'all') list = list.filter(t => t.category === activeCategory);
+      const q = searchQuery.trim().toLowerCase();
+      if (q) {
         list = list.filter(t =>
           t.name.toLowerCase().includes(q) ||
           t.desc.toLowerCase().includes(q) ||
           t.tags.some(tag => tag.toLowerCase().includes(q))
         );
       }
-
       return list;
     }
 
@@ -405,160 +517,205 @@
       return favorites.map(slug => TOOLS.find(t => t.slug === slug)).filter(Boolean);
     }
 
-    // ===== 渲染 =====
+    // ===== 工具卡片渲染 =====
+    const TAG_CLASS = { dev: 'dev-tag', fun: 'fun-tag' };
+    const CAT_CLASS = { dev: 'dev', fun: 'fun' };
+
     function renderCard(tool, isFav, index) {
+      const tagClass = TAG_CLASS[tool.category] || 'dev-tag';
+      const catClass = CAT_CLASS[tool.category] || 'dev';
       const fav = isFavorite(tool.slug);
-      const tagClass = tool.category === 'fun' ? 'fun-tag' : 'dev-tag';
-      const catClass = tool.category === 'fun' ? 'fun' : 'dev';
-
-      const dragHandle = isFav
-        ? `<span class="tool-drag-handle" draggable="true" data-index="${index}">⠿</span>`
-        : '';
-
-      const starBtn = `<span class="tool-star ${fav ? 'active' : ''}" data-slug="${tool.slug}" title="${fav ? '取消收藏' : '收藏'}">${fav ? '★' : '☆'}</span>`;
-
-      const tagsHTML = tool.tags.map(t => `<span class="tool-tag ${tagClass}">${t}</span>`).join('');
-
       return `
         <a href="${tool.url}" class="tool-card ${isFav ? 'fav-card' : ''}" data-slug="${tool.slug}" ${isFav ? `data-fav-index="${index}"` : ''}>
-          ${dragHandle}
+          ${isFav ? `<span class="tool-drag-handle" draggable="true" data-index="${index}">⠿</span>` : ''}
           <div class="tool-icon ${catClass}">${tool.icon}</div>
           <div class="tool-info">
             <div class="tool-name">${tool.name}</div>
             <div class="tool-desc">${tool.desc}</div>
-            <div class="tool-tags">${tagsHTML}</div>
+            <div class="tool-tags">${tool.tags.map(t => `<span class="tool-tag ${tagClass}">${t}</span>`).join('')}</div>
           </div>
-          ${starBtn}
+          <span class="tool-star ${fav ? 'active' : ''}" data-slug="${tool.slug}" title="${fav ? '取消收藏' : '收藏'}">${fav ? '★' : '☆'}</span>
           <span class="tool-arrow">→</span>
         </a>
       `;
     }
 
-    function render() {
-      const filtered = getFilteredTools();
-      const favTools = getFavTools();
-      const isGrid = viewMode === 'grid';
+    function renderCardList(cardsData, isFav, isGrid) {
+      const cards = cardsData.map((t, i) => renderCard(t, isFav, isFav ? i : undefined)).join('');
+      return isGrid
+        ? `<div class="tool-grid active">${cards}</div>`
+        : `<div class="tool-list">${cards}</div>`;
+    }
 
-      // 渲染分类标签
-      function renderCatTabs() {
-        const $catTabs = document.getElementById('catTabs');
-        if (!$catTabs) return;
-        $catTabs.innerHTML = CATEGORIES.map(cat => {
-          const count = cat.id === 'all'
-            ? TOOLS.length
-            : TOOLS.filter(t => t.category === cat.id).length;
-          return `<button class="cat-tab ${activeCategory === cat.id ? 'active' : ''}" data-cat="${cat.id}">
-            ${cat.icon} ${cat.label} <span class="tab-count">${count}</span>
-          </button>`;
-        }).join('');
+    function renderEmpty(msg, hint) {
+      return `\n        <div class="section-empty">\n          ${msg}\n          <div class="hint">${hint}</div>\n        </div>\n      `;
+    }
 
-        $catTabs.querySelectorAll('.cat-tab').forEach(el => {
-          el.addEventListener('click', () => {
-            activeCategory = el.dataset.cat;
-            saveCategory();
-            render();
-          });
-        });
-      }
-
-      // 收藏的
-      if (favTools.length > 0) {
-        const cards = favTools.map((t, i) => renderCard(t, true, i)).join('');
-        $favBody.innerHTML = isGrid
-          ? `<div class="tool-grid active">${cards}</div>`
-          : `<div class="tool-list">${cards}</div>`;
-        $favCount.textContent = `(${favTools.length})`;
-
-        // 绑定收藏拖动
-        const listEl = $favBody.querySelector(isGrid ? '.tool-grid' : '.tool-list');
-        if (listEl) listEl.querySelectorAll('.tool-card').forEach(el => bindDrag(el));
-      } else {
-        $favBody.innerHTML = `
-          <div class="section-empty">
-            ⭐ 还没有收藏的工具
-            <div class="hint">在下方工具列表点击 ☆ 即可收藏</div>
-          </div>
-        `;
-        $favCount.textContent = '(0)';
-      }
-
-      // 全部工具
-      const $allList = document.getElementById('allList');
-      if ($allList) {
-        if (filtered.length > 0) {
-          const cards = filtered.map(t => renderCard(t, false)).join('');
-          $allList.innerHTML = isGrid
-            ? `<div class="tool-grid active">${cards}</div>`
-            : `<div class="tool-list">${cards}</div>`;
-        } else {
-          $allList.innerHTML = `
-            <div class="section-empty">
-              🔍 没有匹配的工具
-              <div class="hint">试试其他关键词</div>
-            </div>
-          `;
-        }
-      }
-      $allCount.textContent = `(${filtered.length})`;
-
-      renderCatTabs();
-
-      // 绑定收藏点击
-      document.querySelectorAll('.tool-star').forEach(el => {
-        el.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          toggleFavorite(el.dataset.slug);
-        });
+    // ===== 分类 Tab 渲染 =====
+    function renderCatTabs() {
+      const el = dom.catTabs;
+      if (!el) return;
+      el.innerHTML = CATEGORIES.map(cat => {
+        const count = cat.id === 'all' ? TOOLS.length : TOOLS.filter(t => t.category === cat.id).length;
+        return `<button class="cat-tab ${activeCategory === cat.id ? 'active' : ''}" data-cat="${cat.id}">${cat.icon} ${cat.label} <span class="tab-count">${count}</span></button>`;
+      }).join('');
+      el.querySelectorAll('.cat-tab').forEach(tab => {
+        tab.addEventListener('click', () => { activeCategory = tab.dataset.cat; saveCategory(); render(); });
       });
+    }
+
+    // ===== 区块渲染 =====
+    function renderFavorites(favTools, isGrid) {
+      if (favTools.length > 0) {
+        dom.favBody.innerHTML = renderCardList(favTools, true, isGrid);
+        dom.favCount.textContent = `(${favTools.length})`;
+        const listEl = dom.favBody.querySelector(isGrid ? '.tool-grid' : '.tool-list');
+        if (listEl) listEl.querySelectorAll('.tool-card.fav-card').forEach(el => bindDrag(el));
+      } else {
+        dom.favBody.innerHTML = renderEmpty('⭐ 还没有收藏的工具', '在下方工具列表点击 ☆ 即可收藏');
+        dom.favCount.textContent = '(0)';
+      }
+    }
+
+    function renderAllTools(filtered, isGrid) {
+      const el = dom.allList;
+      if (!el) return;
+      if (filtered.length > 0) {
+        el.innerHTML = renderCardList(filtered, false, isGrid);
+      } else {
+        el.innerHTML = renderEmpty('🔍 没有匹配的工具', '试试其他关键词');
+      }
+      dom.allCount.textContent = `(${filtered.length})`;
+    }
+
+    // ===== 主渲染 =====
+    function render() {
+      renderFavorites(getFavTools(), viewMode === 'grid');
+      renderAllTools(getFilteredTools(), viewMode === 'grid');
+      renderCatTabs();
     }
 
     // ===== 拖拽 =====
     function bindDrag(el) {
       const handle = el.querySelector('.tool-drag-handle');
       if (!handle) return;
-
       handle.addEventListener('dragstart', (e) => {
-        const idx = parseInt(handle.dataset.index);
-        dragSrcIndex = idx;
+        dragSrcIndex = parseInt(handle.dataset.index);
         el.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', idx);
+        e.dataTransfer.setData('text/plain', '');
       });
-
       handle.addEventListener('dragend', () => {
         el.classList.remove('dragging');
         document.querySelectorAll('.tool-card.drag-over').forEach(c => c.classList.remove('drag-over'));
       });
-
-      el.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-      });
-
+      el.addEventListener('dragover', (e) => e.preventDefault());
       el.addEventListener('dragenter', (e) => {
         e.preventDefault();
-        if (el.dataset.favIndex !== undefined && parseInt(el.dataset.favIndex) !== dragSrcIndex) {
-          el.classList.add('drag-over');
-        }
+        if (el.dataset.favIndex !== undefined && parseInt(el.dataset.favIndex) !== dragSrcIndex) el.classList.add('drag-over');
       });
-
-      el.addEventListener('dragleave', () => {
-        el.classList.remove('drag-over');
-      });
-
+      el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
       el.addEventListener('drop', (e) => {
         e.preventDefault();
         el.classList.remove('drag-over');
         const targetIdx = parseInt(el.dataset.favIndex);
-        if (targetIdx >= 0 && targetIdx !== dragSrcIndex) {
-          moveFavorite(dragSrcIndex, targetIdx);
-        }
+        if (targetIdx >= 0 && targetIdx !== dragSrcIndex) moveFavorite(dragSrcIndex, targetIdx);
         dragSrcIndex = -1;
       });
     }
 
-    // ===== 视图切换 =====
+    // ===== Tab 管理 =====
+    function switchTab(tabId) {
+      activeTabId = tabId;
+      dom.tabBar.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      const tabEl = dom.tabBar.querySelector(`.tab[data-tab="${tabId}"]`);
+      if (tabEl) tabEl.classList.add('active');
+      if (tabId === 'home') {
+        dom.paneHome.classList.add('active');
+        dom.paneIframe.classList.remove('active');
+      } else {
+        const tab = tabs.find(t => t.id === tabId);
+        if (tab) {
+          dom.paneHome.classList.remove('active');
+          dom.paneIframe.classList.add('active');
+          dom.iframe.src = tab.url;
+        }
+      }
+    }
+
+    function closeTab(tabId, e) {
+      e.stopPropagation();
+      const idx = tabs.findIndex(t => t.id === tabId);
+      if (idx < 0) return;
+      tabs.splice(idx, 1);
+      const tabEl = dom.tabBar.querySelector(`.tab[data-tab="${tabId}"]`);
+      if (tabEl) tabEl.remove();
+      if (!dom.paneHome.classList.contains('active')) {
+        const activeEl = dom.tabBar.querySelector('.tab.active');
+        if (!activeEl || activeEl.dataset.tab === tabId) {
+          const remaining = dom.tabBar.querySelectorAll('.tab');
+          switchTab(remaining.length > 0 ? remaining[remaining.length - 1].dataset.tab : 'home');
+        }
+      }
+      saveTabs();
+    }
+
+    function openToolTab(tool) {
+      const existing = tabs.find(t => t.slug === tool.slug);
+      if (existing) { switchTab(existing.id); return; }
+      const tabId = 'tab-' + (++tabIdCounter);
+      tabs.push({ id: tabId, slug: tool.slug, name: tool.name, icon: tool.icon, url: tool.url });
+      const tabEl = document.createElement('div');
+      tabEl.className = 'tab';
+      tabEl.dataset.tab = tabId;
+      tabEl.innerHTML = `<span class="tab-icon">${tool.icon}</span><span>${tool.name}</span><span class="tab-close">✕</span>`;
+      tabEl.addEventListener('click', () => switchTab(tabId));
+      tabEl.querySelector('.tab-close').addEventListener('click', (e) => closeTab(tabId, e));
+      dom.tabBar.appendChild(tabEl);
+      tabEl.scrollIntoView({ behavior: 'smooth', inline: 'end', block: 'nearest' });
+      switchTab(tabId);
+      saveTabs();
+    }
+
+    function closeAllToolTabs() {
+      dom.tabBar.querySelectorAll('.tab:not([data-tab="home"])').forEach(el => el.remove());
+      tabs.length = 0;
+      dom.paneHome.classList.add('active');
+      dom.paneIframe.classList.remove('active');
+      dom.tabBar.querySelector('.tab[data-tab="home"]')?.classList.add('active');
+      activeTabId = 'home';
+    }
+
+    function hideIframeBackLinks() {
+      try {
+        const doc = dom.iframe.contentDocument || dom.iframe.contentWindow.document;
+        doc.querySelectorAll('.back-link').forEach(el => el.style.display = 'none');
+      } catch(e) {}
+    }
+
+    function restoreTabs() {
+      const saved = lsGet('vtc_tabs', null);
+      if (!saved || !saved.slugs || !Array.isArray(saved.slugs)) return;
+      saved.slugs.forEach(slug => {
+        const tool = TOOLS.find(t => t.slug === slug);
+        if (tool) openToolTab(tool);
+      });
+      if (saved.active && saved.active !== 'home') {
+        const target = tabs.find(t => t.id === saved.active);
+        if (target) switchTab(saved.active);
+      }
+    }
+
+    // ===== 区块折叠 =====
+    function getSectionBody(section) { return section === 'fav' ? dom.favBody : dom.allBody; }
+
+    function applyCollapse(section, collapsed) {
+      getSectionBody(section).classList.toggle('collapsed', collapsed);
+      const icon = document.querySelector(`.section-header[data-section="${section}"] .collapse-icon`);
+      if (icon) icon.classList.toggle('collapsed', collapsed);
+    }
+
+    // ===== 事件绑定 =====
     document.querySelectorAll('.view-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
@@ -569,42 +726,60 @@
       });
     });
 
-    // ===== 收起/展开 =====
     document.querySelectorAll('.section-header').forEach(header => {
       header.addEventListener('click', () => {
         const section = header.dataset.section;
-        const body = section === 'fav' ? $favBody : $allBody;
+        const body = getSectionBody(section);
+        const collapsed = body.classList.toggle('collapsed');
         const icon = header.querySelector('.collapse-icon');
-        const isCollapsed = body.classList.toggle('collapsed');
-        icon.classList.toggle('collapsed', isCollapsed);
-        collapseState[section] = isCollapsed;
+        if (icon) icon.classList.toggle('collapsed', collapsed);
+        collapseState[section] = collapsed;
         saveCollapse();
       });
     });
 
-    // ===== 搜索 =====
-    $searchInput.addEventListener('input', () => {
-      searchQuery = $searchInput.value;
+    dom.searchInput.addEventListener('input', () => {
+      searchQuery = dom.searchInput.value;
       render();
     });
 
+    dom.tabBar.querySelector('.tab[data-tab="home"]').addEventListener('click', () => switchTab('home'));
+
+    dom.iframe.addEventListener('load', () => {
+      dom.loading.style.display = 'none';
+      dom.iframe.style.display = 'block';
+      hideIframeBackLinks();
+    });
+
+    document.addEventListener('click', (e) => {
+      const star = e.target.closest('.tool-star');
+      if (star) { e.preventDefault(); e.stopPropagation(); toggleFavorite(star.dataset.slug); return; }
+      const card = e.target.closest('.tool-card');
+      if (!card || e.target.closest('.tool-drag-handle')) return;
+      if (!tabMode) return;
+      e.preventDefault();
+      const slug = card.dataset.slug;
+      if (!slug) return;
+      const tool = TOOLS.find(t => t.slug === slug);
+      if (tool) openToolTab(tool);
+    });
+
+    dom.settingsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dom.settingsDropdown.classList.toggle('open');
+    });
+    document.addEventListener('click', () => dom.settingsDropdown.classList.remove('open'));
+    dom.tabModeToggle.addEventListener('change', () => {
+      tabMode = dom.tabModeToggle.checked;
+      saveTabMode();
+      if (!tabMode) { closeAllToolTabs(); saveTabs(); }
+    });
+
     // ===== 初始化 =====
-    loadFavorites();
-    loadView();
-    loadCategory();
-    loadCollapse();
-    // 应用保存的收起状态
-    Object.keys(collapseState).forEach(section => {
-      if (collapseState[section]) {
-        const body = section === 'fav' ? $favBody : $allBody;
-        body.classList.add('collapsed');
-        document.querySelector(`.section-header[data-section="${section}"] .collapse-icon`)?.classList.add('collapsed');
-      }
-    });
-    // 激活保存的视图
-    document.querySelectorAll('.view-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.view === viewMode);
-    });
+    dom.tabModeToggle.checked = tabMode;
+    Object.keys(collapseState).forEach(s => { if (collapseState[s]) applyCollapse(s, true); });
+    document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === viewMode));
+    restoreTabs();
     render();
   </script>
 </body>
