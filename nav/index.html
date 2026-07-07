@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="manifest" href="/manifest.json"/>
   <link rel="icon" type="image/svg+xml" href="/icon.svg"/>
   <title>Victor's Tool Collection</title>
   <style>
@@ -415,7 +416,7 @@
       { slug: 'webshell',      name: 'WebShell 终端',    desc: 'Web SSH · 本地终端 · 快速连接',                 icon: '🖥', url: '/webshell/',       category: 'dev', tags: ['工具'] },
       { slug: 'json-formatter',name: 'JSON 格式化',      desc: '格式化 · 校验 · 语法高亮',                     icon: '{ }',  url: '/json-formatter/', category: 'dev', tags: ['工具'] },
       { slug: 'jwt-decoder',   name: 'JWT 解码',        desc: '解析 Header · Payload · 过期校验',              icon: '🔐', url: '/jwt-decoder/',   category: 'dev', tags: ['工具'] },
-      { slug: 'score-board',   name: '记分板',          desc: '可编辑队名 · 翻页动画 · 本地存储',              icon: '🏀', url: '/score-board/',   category: 'fun', tags: ['React'] },
+      { slug: 'score-board',   name: '记分板',          desc: '可编辑队名 · 翻页动画 · 本地存储',              icon: '🏀', url: '/score-board/',   category: 'fun', tags: ['工具'] },
       { slug: 'timestamp',    name: '时间戳转换',       desc: 'Unix 时间戳 · 秒/毫秒 · 双向转换',                icon: '⏰', url: '/timestamp/',     category: 'dev', tags: ['工具'] },
     ];
 
@@ -687,7 +688,15 @@
     function hideIframeBackLinks(iframe) {
       try {
         const doc = iframe.contentDocument || iframe.contentWindow.document;
+        // 隐藏已有的 back-link
         doc.querySelectorAll('.back-link').forEach(el => el.style.display = 'none');
+        // 监听动态添加的 back-link（如 React 渲染的）
+        const observer = new MutationObserver(() => {
+          doc.querySelectorAll('.back-link').forEach(el => el.style.display = 'none');
+        });
+        observer.observe(doc.body, { childList: true, subtree: true });
+        // iframe 卸载时断开 observer
+        iframe.addEventListener('unload', () => observer.disconnect());
       } catch(e) {}
     }
 
@@ -771,6 +780,8 @@
         if (tool) openToolTab(tool);
       });
       switchTab('home');
+      // 恢复后滚动到开头（首页 Tab）
+      dom.tabBar.scrollLeft = 0;
     }
 
     // ===== 区块折叠 =====
@@ -833,7 +844,13 @@
     dom.tabModeToggle.addEventListener('change', () => {
       tabMode = dom.tabModeToggle.checked;
       saveTabMode();
-      if (!tabMode) { closeAllToolTabs(); saveTabs(); }
+      if (!tabMode) {
+        closeAllToolTabs();
+        dom.tabBar.style.display = 'none';
+        saveTabs();
+      } else {
+        dom.tabBar.style.display = '';
+      }
     });
 
     // ===== 初始化 =====
@@ -842,6 +859,17 @@
     document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === viewMode));
     restoreTabs();
     render();
+    // 非 tab 模式隐藏 tab 栏（放最后确保不被覆盖）
+    if (!tabMode) dom.tabBar.style.display = 'none';
+    // 处理浏览器往返缓存（bfcache）：返回时不重新执行 JS，但 pageshow 会触发
+    window.addEventListener('pageshow', () => {
+      if (!lsGet('vtc_tabmode', true)) dom.tabBar.style.display = 'none';
+    });
+
+    // PWA: 注册 Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
   </script>
 </body>
 </html>
