@@ -413,46 +413,39 @@
     // ================================================================
     // Reverse-escape: recursively unescape JSON string fields
     // ================================================================
-    function unescapeNested(value, depth) {
-      if (depth <= 0) return value;
+    // ================================================================
+    // Text-level unescape (preserves large numbers)
+    // ================================================================
+    // Unescape string tokens recursively (text-level, no JSON.parse)
+    function unescapeTokens(tokens, depth) {
+      if (depth <= 0 || !tokens || tokens.length === 0) return tokens;
 
-      if (typeof value === 'string') {
-        // First check if the entire string is a JSON object/array
-        const trimmed = value.trim();
-        if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-            (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-          try {
-            const parsed = JSON.parse(trimmed);
-            // Only recurse if the result is an object or array (not just a string/number)
-            if (parsed !== null && typeof parsed === 'object') {
-              return unescapeNested(parsed, depth - 1);
-            }
-            // If it's a primitive, keep original string
-            if (typeof parsed === 'string') {
-              // It was a JSON string within a string - could be double-escaped
-              return unescapeNested(parsed, depth);
-            }
-            return value;
-          } catch {
-            return value;
+      const result = [];
+      for (let i = 0; i < tokens.length; i++) {
+        const tok = tokens[i];
+
+        if (tok.type === 'string') {
+          // Extract the string content (between quotes)
+          let inner = tok.raw;
+          // Already includes quotes, check if inner value is JSON
+          const content = inner.slice(1, -1); // remove surrounding quotes
+          const trimmed = content.trim();
+
+          if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+              (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+            // Tokenize and recursively unescape the inner JSON string
+            const innerTokens = tokenize(trimmed);
+            const unescaped = unescapeTokens(innerTokens, depth - 1);
+            const pretty = prettyPrint(unescaped);
+            result.push({ type: 'value', value: pretty });
+          } else {
+            result.push(tok);
           }
+        } else {
+          result.push(tok);
         }
-        return value;
       }
-
-      if (Array.isArray(value)) {
-        return value.map(v => unescapeNested(v, depth));
-      }
-
-      if (value !== null && typeof value === 'object') {
-        const result = {};
-        for (const key in value) {
-          result[key] = unescapeNested(value[key], depth);
-        }
-        return result;
-      }
-
-      return value;
+      return result;
     }
 
     // ================================================================
@@ -487,10 +480,6 @@
     // ================================================================
     // JSON stringify with formatting (for unescape output)
     // ================================================================
-    function jsonStringifyPretty(obj) {
-      return JSON.stringify(obj, null, 2);
-    }
-
     // ================================================================
     // Format action
     // ================================================================
@@ -508,11 +497,17 @@
       try { parsed = JSON.parse(raw); } catch (e) { parseOk = false; }
 
       let resultStr;
-      if (parseOk && $unescapeCheck.checked) {
-        const depth = parseInt($unescapeDepth.value, 10) || 1;
+      if ($unescapeCheck.checked) {
         try {
-          const unescaped = unescapeNested(parsed, depth);
-          resultStr = jsonStringifyPretty(unescaped);
+          const depth = parseInt($unescapeDepth.value, 10) || 1;
+          const tokens = tokenize(raw);
+          const unescaped = unescapeTokens(tokens, depth);
+          resultStr = prettyPrint(unescaped);
+          // Validate by parsing - if parse fails, show warning
+          try {
+            JSON.parse(resultStr);
+            parseOk = true;
+          } catch { parseOk = false; }
         } catch (e) {
           $output.textContent = '❌ 反转义失败：' + e.message;
           $output.className = 'output error';
@@ -599,6 +594,23 @@
     // ================================================================
     // Escape tab
     // ================================================================
+    function escapeJsonString(str) {
+      // Escape a string as a JSON string literal (preserves content exactly)
+      let result = '"';
+      for (let i = 0; i < str.length; i++) {
+        const ch = str[i];
+        const code = str.charCodeAt(i);
+        if (ch === '"') result += '\\"';
+        else if (ch === '\\') result += '\\\\';
+        else if (ch === '\n') result += '\\n';
+        else if (ch === '\r') result += '\\r';
+        else if (ch === '\t') result += '\\t';
+        else if (code < 32) result += '\\u' + code.toString(16).padStart(4, '0');
+        else result += ch;
+      }
+      return result + '"';
+    }
+
     function doEscape() {
       const raw = $escapeInput.value.trim();
       if (!raw) {
@@ -607,8 +619,11 @@
         return;
       }
 
-      let parsed;
-      try { parsed = JSON.parse(raw); } catch (e) {
+      // Validate: try parsing with JSON.parse for syntax check only
+      // Then re-escape using text-level approach to preserve large numbers
+      try {
+        JSON.parse(raw);
+      } catch (e) {
         $escapeOutput.textContent = '❌ JSON 解析失败：' + e.message;
         $escapeOutput.className = 'output error';
         $escapeInputLabel.textContent = '✗ 无效 JSON';
@@ -618,10 +633,11 @@
         return;
       }
 
-      // Convert to a JSON string and then wrap it as a string literal
-      const jsonStr = JSON.stringify(parsed);
-      // The escaped result is this string, shown as a valid JSON string value
-      const result = '"' + jsonStr.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+      // Minify: tokenize and rebuild without whitespace (preserves large numbers)
+      const tokens = tokenize(raw);
+      const compact = tokens.map(t => t.value).join('');
+      // Use text-level escaping to preserve large numbers
+      const result = escapeJsonString(compact);
 
       $escapeOutput.innerHTML = '<span class="escaped-str">' + result.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>';
       $escapeOutput.className = 'output';
