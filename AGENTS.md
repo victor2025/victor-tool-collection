@@ -4,6 +4,14 @@
 
 ## 📌 核心规则
 
+### 🚫 禁止直接提交和推送
+
+**所有代码修改必须先展示给老板确认，严禁直接 `git commit` 和 `git push`。**
+
+只有在老板明确说出「可以提交」或「提交吧」之后，才允许执行 commit 和 push 操作。
+
+> 违反此规则 = 信用破产，切记。
+
 ### 每次修改项目 → 必须更新 README.md
 
 凡是对本项目做出以下任何变更后，**必须同步更新项目根目录的 `README.md`**：
@@ -35,6 +43,24 @@
 
 > 📌 提交信息中若涉及某模块的变更，该模块的 README.md 必须同步反映最新状态。
 
+### 每个文本框 → 右上角必须有「清空」「复制」按钮
+
+参考 `tools/base64/` 的 UI 模式，每个文本框（textarea）和输出框的**右上角**必须放置「清空」和「复制」两个按钮：
+
+- **清空按钮**（`.act.clear`）：清空当前文本框的内容
+- **复制按钮**（`.act`）：将当前文本框的内容复制到剪贴板
+- 采用 `.editor-label`（或 `.pane-header`）左右分栏布局：左侧放名称/计数，右侧放操作按钮
+
+```html
+<div class="pane-header">
+  <span class="left">输入 <span class="badge">...</span></span>
+  <span class="right">
+    <span class="act clear" onclick="...">清空</span>
+    <span class="act" onclick="...">复制</span>
+  </span>
+</div>
+```
+
 ### 已有 README.md 的模块
 
 - `tools/webshell/README.md` — 已有较完整文档，维护时需同步更新
@@ -52,6 +78,7 @@ victor-tool-collection/
 │   └── index.html
 ├── tools/             ← 工具模块（每个子目录必须有 README.md）
 │   ├── base64/        Base64 编解码
+│   ├── json-formatter/ JSON 格式化/转义工具
 │   ├── qrcode/        二维码工具
 │   ├── score-board/   记分板 (React)
 │   └── webshell/      Web 终端 (ttyd)
