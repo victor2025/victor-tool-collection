@@ -6,7 +6,7 @@
   <title>JSON 格式化</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    :root { --title-top: 30px; }
+    :root { --title-top: 30px; --container-width: 860px; }
     body {
       min-height: 100vh; height: 100vh; overflow: hidden;
       background: #0a0a0a;
@@ -18,7 +18,7 @@
       align-items: center;
     }
     .container {
-      max-width: 960px; width: 100%;
+      max-width: var(--container-width); width: 100%;
       flex: 1; min-height: 0;
       display: flex; flex-direction: column;
     }

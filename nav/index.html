@@ -59,19 +59,19 @@
       display: block;
     }
     #pane-home {
-      padding: 30px 20px 40px;
+      padding: 30px 48px 40px;
       background:
         radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.015) 0%, transparent 60%),
         #0a0a0a;
     }
-    #pane-home .container { max-width: 800px; margin: 0 auto; }
+    #pane-home .container { max-width: 720px; margin: 0 auto; }
 
     .pane-iframe {
       width: 100%; height: calc(100vh - 40px);
       border: none; display: block; background: #0a0a0a;
     }
 
-    .container { max-width: 800px; margin: 0 auto; }
+    .container { max-width: 720px; margin: 0 auto; }
 
     .header { text-align: center; margin-bottom: 20px; }
     .header h1 {
@@ -189,7 +189,7 @@
     /* ===== 工具卡片 ===== */
     .tool-grid {
       display: none;
-      grid-template-columns: 1fr 1fr; gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 10px;
     }
     .tool-grid.active { display: grid; }
 
@@ -206,6 +206,7 @@
       text-decoration: none; color: #ccc;
       transition: all 0.15s ease;
       cursor: pointer;
+      width: 100%;
     }
     .tool-card:hover {
       border-color: #4ecdc4;

@@ -6,7 +6,7 @@
   <title>WebShell - SSH 终端</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    :root { --title-top: 30px; }
+    :root { --title-top: 30px; --container-width: 860px; }
     body {
       min-height: 100vh;
       background: #0a0a0a;
@@ -17,7 +17,7 @@
       align-items: center;
       padding: var(--title-top) 20px;
     }
-    .container { max-width: 720px; width: 100%; }
+    .container { max-width: var(--container-width); width: 100%; }
 
     .header {
       text-align: center;

@@ -6,7 +6,7 @@
   <title>二维码工具</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    :root { --title-top: 30px; }
+    :root { --title-top: 30px; --container-width: 860px; }
     body {
       min-height: 100vh;
       background: #000;
@@ -19,7 +19,7 @@
         radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.015) 0%, transparent 60%),
         #000;
     }
-    .container { width: 100%; max-width: 560px; }
+    .container { width: 100%; max-width: var(--container-width); }
     .header { text-align: center; margin-bottom: 24px; }
     .back-link {
       display: inline-flex; align-items: center; gap: 6px;
@@ -184,7 +184,7 @@
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    @media (max-width: 480px) {
+    @media (max-width: var(--container-width)) {
       body { padding: 16px 12px; }
       .card { padding: 14px; }
     }
