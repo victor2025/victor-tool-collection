@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>二维码工具</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --title-top: 30px; }
+    body {
+      min-height: 100vh;
+      background: #000;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      padding: var(--title-top) 20px;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.015) 0%, transparent 60%),
+        #000;
+    }
+    .container { width: 100%; max-width: 560px; }
+    .header { text-align: center; margin-bottom: 24px; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: #555; text-decoration: none; font-size: 13px;
+      margin-bottom: 16px; transition: color 0.2s;
+    }
+    .back-link:hover { color: #4ecdc4; }
+    .header h1 {
+      font-size: 24px; font-weight: 700; letter-spacing: 3px;
+      color: #ddd; margin-bottom: 4px;
+    }
+    .header .sub { font-size: 13px; color: #555; }
+
+    .tabs {
+      display: flex;
+      border-radius: 10px;
+      border: 1px solid #222;
+      overflow: hidden;
+      margin-bottom: 20px;
+      background: #0a0a0a;
+    }
+    .tab {
+      flex: 1; padding: 12px 0; text-align: center;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s; color: #555; user-select: none;
+    }
+    .tab.active {
+      color: #e0e0e0;
+      background: linear-gradient(180deg, #1a1a1a 0%, #151515 100%);
+    }
+    .tab:not(.active):hover { color: #888; background: #0f0f0f; }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .card {
+      background: linear-gradient(135deg, #111 0%, #151515 100%);
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 14px;
+    }
+    .card-label {
+      font-size: 13px; font-weight: 600; color: #888;
+      letter-spacing: 1px; margin-bottom: 10px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid #2a2a2a;
+      background: #0d0d0d;
+      color: #e0e0e0;
+      font-family: 'SF Mono', 'Consolas', 'Courier New', monospace;
+      font-size: 14px;
+      outline: none;
+      line-height: 1.6;
+      resize: vertical;
+      transition: border-color 0.15s;
+    }
+    textarea:focus { border-color: #4ecdc4; }
+    textarea::placeholder { color: #444; }
+
+    .btn-row { display: flex; gap: 10px; margin-top: 12px; }
+    .btn {
+      flex: 1; padding: 10px 16px;
+      border: 1px solid #333; border-radius: 8px;
+      background: linear-gradient(180deg, #222 0%, #1a1a1a 100%);
+      color: #ccc; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; text-align: center;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { color: #4ecdc4; border-color: #4ecdc4; }
+    .btn-primary:hover {
+      background: linear-gradient(180deg, #1a3a36 0%, #142a26 100%);
+      box-shadow: 0 0 12px rgba(78,205,196,0.2);
+    }
+    .btn-success { color: #4ecdc4; border-color: #4ecdc4; }
+
+    .qr-display {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 24px; min-height: 220px;
+      justify-content: center;
+    }
+    .qr-display canvas { border-radius: 8px; }
+    .qr-hint { font-size: 13px; color: #555; text-align: center; }
+
+    .scan-section { margin-bottom: 14px; }
+    .scan-box {
+      border: 2px dashed #222;
+      border-radius: 10px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .scan-box:hover {
+      border-color: #4ecdc4;
+      background: #0d1a18;
+    }
+    .scan-box .icon { font-size: 32px; margin-bottom: 6px; }
+    .scan-box .text { font-size: 14px; color: #666; }
+    .scan-box .sub { font-size: 12px; color: #444; margin-top: 2px; }
+    .scan-box input { display: none; }
+
+    .scan-result {
+      margin-top: 10px;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid #1a1a1a;
+      background: #0a0a0a;
+      display: none;
+    }
+    .scan-result.show { display: block; }
+    .scan-result .label {
+      font-size: 11px; color: #555; letter-spacing: 1px; margin-bottom: 6px;
+    }
+    .scan-result .value {
+      font-size: 14px; color: #4ecdc4; word-break: break-all; line-height: 1.5;
+    }
+    .scan-result .value.error { color: #ff6b6b; }
+
+    .camera-container {
+      border-radius: 10px;
+      overflow: hidden;
+      background: #0a0a0a;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .camera-container video {
+      width: 100%; display: block;
+    }
+    .camera-overlay {
+      position: absolute; inset: 0;
+      border: 3px solid rgba(78,205,196,0.3);
+      border-radius: 10px;
+      pointer-events: none;
+    }
+    .camera-scanline {
+      position: absolute; left: 10%; right: 10%; height: 2px;
+      background: rgba(78,205,196,0.6);
+      animation: scanMove 2s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes scanMove {
+      0% { top: 10%; }
+      50% { top: 85%; }
+      100% { top: 10%; }
+    }
+    .camera-hint { text-align: center; font-size: 12px; color: #555; padding-top: 10px; }
+
+    .toast {
+      position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #222; color: #ccc; padding: 10px 24px; border-radius: 8px;
+      border: 1px solid #333; font-size: 13px;
+      opacity: 0; transition: all 0.3s ease; pointer-events: none; z-index: 100;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 480px) {
+      body { padding: 16px 12px; }
+      .card { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">← 返回工具集</a>
+    <div class="header">
+      <h1>📱 二维码工具</h1>
+      <div class="sub">生成 · 识别 · 扫码</div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" id="tabGen" onclick="switchTab('gen')">✨ 生成</div>
+      <div class="tab" id="tabScan" onclick="switchTab('scan')">🔍 扫码</div>
+    </div>
+
+    <!-- 生成面板 -->
+    <div class="panel active" id="panelGen">
+      <div class="card">
+        <div class="card-label">
+          <span>📝 文本内容</span>
+          <span style="font-size:11px;color:#555" id="genCharCount">0 字符</span>
+        </div>
+        <textarea id="genInput" placeholder="输入要生成二维码的文本..." spellcheck="false"></textarea>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="generateQR()">✨ 生成二维码</button>
+          <button class="btn" onclick="clearGen()">✕ 清空</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label"><span>🖼 二维码预览</span></div>
+        <div class="qr-display" id="qrDisplay">
+          <div class="qr-hint">输入内容后点击「生成二维码」</div>
+        </div>
+        <div class="btn-row" id="downloadRow" style="display:none">
+          <button class="btn btn-primary" onclick="downloadQR()">⬇ 下载 PNG</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 扫码面板 -->
+    <div class="panel" id="panelScan">
+      <!-- 方式一：上传图片 -->
+      <div class="card scan-section">
+        <div class="card-label"><span>🖼️ 上传图片</span></div>
+        <div class="scan-box" id="uploadBox" onclick="document.getElementById('fileInput').click()">
+          <div class="icon">🖼️</div>
+          <div class="text">点击选择二维码图片</div>
+          <div class="sub">支持 PNG / JPG / WebP</div>
+          <input type="file" id="fileInput" accept="image/*" onchange="decodeFromFile(event)"/>
+        </div>
+        <div class="scan-result" id="scanFileResult">
+          <div class="label">📋 识别结果</div>
+          <div class="value" id="scanFileText"></div>
+        </div>
+      </div>
+
+      <!-- 方式二：拍照扫码（手机直接用摄像头拍） -->
+      <div class="card scan-section">
+        <div class="card-label"><span>📸 拍照扫码</span></div>
+        <div class="scan-box" id="cameraBox" onclick="document.getElementById('cameraInput').click()">
+          <div class="icon">📸</div>
+          <div class="text">拍照识别二维码</div>
+          <div class="sub">手机/电脑均可使用 · 自动识别</div>
+          <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="decodeFromCamera(event)"/>
+        </div>
+        <div class="scan-result" id="scanCamResult">
+          <div class="label">📋 识别结果</div>
+          <div class="value" id="scanCamText"></div>
+        </div>
+      </div>
+
+      <!-- 方式三：实时摄像头扫码 -->
+      <div class="card scan-section" id="liveCameraCard">
+        <div class="card-label"><span>📹 实时扫码</span></div>
+        <div class="camera-container">
+          <video id="cameraVideo" autoplay playsinline muted></video>
+          <div class="camera-overlay"></div>
+          <div class="camera-scanline"></div>
+        </div>
+        <div class="camera-hint" id="cameraHint">需要 HTTPS 连接才能启用摄像头</div>
+        <div class="btn-row" style="margin-top:8px">
+          <button class="btn btn-primary" id="cameraBtn" onclick="toggleCamera()">📷 启动摄像头</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="lib/qrcode.min.js"></script>
+  <script src="lib/jsQR.js"></script>
+  <script>
+    const $ = id => document.getElementById(id)
+
+    // ====== Tab 切换 ======
+    function switchTab(name) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'))
+      $('tab' + (name === 'gen' ? 'Gen' : 'Scan')).classList.add('active')
+      $('panel' + (name === 'gen' ? 'Gen' : 'Scan')).classList.add('active')
+      if (name !== 'gen') stopCamera()
+    }
+
+    // ====== 生成二维码 ======
+    let currentQRCanvas = null
+
+    $('genInput').addEventListener('input', () => {
+      $('genCharCount').textContent = $('genInput').value.length + ' 字符'
+    })
+
+    function generateQR() {
+      const text = $('genInput').value.trim()
+      if (!text) { showToast('⚠️ 请输入文本内容'); return }
+
+      const display = $('qrDisplay')
+      display.innerHTML = ''
+      display.innerHTML = '<div class="qr-hint" style="color:#555">⏳ 生成中...</div>'
+
+      try {
+        QRCode.toCanvas(text, {
+          width: 280,
+          margin: 2,
+          color: { dark: '#f0f0f0', light: '#111111' }
+        }, (err, canvas) => {
+          display.innerHTML = ''
+          if (err) {
+            display.innerHTML = '<div class="qr-hint" style="color:#ff6b6b">❌ 生成失败: 内容过长或不支持</div>'
+            return
+          }
+          currentQRCanvas = canvas
+          canvas.style.borderRadius = '8px'
+          canvas.style.boxShadow = '0 4px 20px rgba(0,0,0,0.4)'
+          display.appendChild(canvas)
+          $('downloadRow').style.display = 'flex'
+        })
+      } catch(e) {
+        display.innerHTML = '<div class="qr-hint" style="color:#ff6b6b">❌ 生成失败: ' + e.message + '</div>'
+      }
+    }
+
+    function downloadQR() {
+      if (!currentQRCanvas) return
+      const link = document.createElement('a')
+      link.download = 'qrcode.png'
+      link.href = currentQRCanvas.toDataURL('image/png')
+      link.click()
+      showToast('✅ 已下载')
+    }
+
+    function clearGen() {
+      $('genInput').value = ''
+      $('genCharCount').textContent = '0 字符'
+      $('qrDisplay').innerHTML = '<div class="qr-hint">输入内容后点击「生成二维码」</div>'
+      $('downloadRow').style.display = 'none'
+      currentQRCanvas = null
+    }
+
+    // ====== 扫码 —— 上传图片 ======
+    function decodeFromFile(event) {
+      decodeImage(event, 'scanFileResult', 'scanFileText')
+    }
+
+    function decodeFromCamera(event) {
+      decodeImage(event, 'scanCamResult', 'scanCamText')
+    }
+
+    function decodeImage(event, resultId, textId) {
+      const file = event.target.files[0]
+      if (!file) return
+
+      const reader = new FileReader()
+      reader.onload = e => {
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const ctx = canvas.getContext('2d')
+          let w = img.naturalWidth, h = img.naturalHeight
+          const maxDim = 1024
+          if (w > maxDim || h > maxDim) {
+            const ratio = Math.min(maxDim / w, maxDim / h)
+            w = Math.round(w * ratio)
+            h = Math.round(h * ratio)
+          }
+          canvas.width = w
+          canvas.height = h
+          ctx.drawImage(img, 0, 0, w, h)
+
+          const imageData = ctx.getImageData(0, 0, w, h)
+          const code = jsQR(imageData.data, w, h)
+
+          const result = $(resultId)
+          const text = $(textId)
+          result.classList.add('show')
+
+          if (code) {
+            text.textContent = code.data
+            text.className = 'value'
+            showToast('✅ 识别成功！')
+          } else {
+            text.textContent = '❌ 未能识别二维码'
+            text.className = 'value error'
+            showToast('⚠️ 未识别到二维码')
+          }
+        }
+        img.src = e.target.result
+      }
+      reader.readAsDataURL(file)
+      event.target.value = ''
+    }
+
+    // ====== 实时摄像头扫码（仅 HTTPS 或 localhost） ======
+    let cameraStream = null
+    let scanInterval = null
+
+    // 检测是否支持摄像头
+    function checkCameraSupport() {
+      const hint = $('cameraHint')
+      const btn = $('cameraBtn')
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        hint.textContent = '⚠️ 实时扫码需要 HTTPS 连接，请使用「拍照扫码」方式'
+        btn.disabled = true
+        btn.style.opacity = '0.4'
+        btn.title = '需要 HTTPS'
+      } else if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        hint.textContent = '⚠️ 浏览器不支持摄像头访问'
+        btn.disabled = true
+        btn.style.opacity = '0.4'
+      } else {
+        hint.textContent = '点击下方按钮启动摄像头，将二维码对准扫描'
+        btn.disabled = false
+        btn.style.opacity = '1'
+        btn.title = ''
+      }
+    }
+
+    function toggleCamera() {
+      if (cameraStream) { stopCamera(); return }
+      startCamera()
+    }
+
+    function startCamera() {
+      const btn = $('cameraBtn')
+      btn.textContent = '⏳ 启动中...'
+      btn.disabled = true
+
+      navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+      }).then(stream => {
+        cameraStream = stream
+        const video = $('cameraVideo')
+        video.srcObject = stream
+        video.play()
+
+        btn.textContent = '⏹ 停止'
+        btn.disabled = false
+        $('cameraHint').textContent = '将二维码对准摄像头，自动识别'
+
+        scanInterval = setInterval(() => scanCameraFrame(), 500)
+      }).catch(err => {
+        btn.textContent = '📷 启动摄像头'
+        btn.disabled = false
+        $('cameraHint').textContent = '❌ 摄像头启动失败: ' + err.message
+        showToast('❌ 无法访问摄像头')
+      })
+    }
+
+    function stopCamera() {
+      if (scanInterval) { clearInterval(scanInterval); scanInterval = null }
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(t => t.stop())
+        cameraStream = null
+      }
+      $('cameraVideo').srcObject = null
+      $('cameraBtn').textContent = '📷 启动摄像头'
+    }
+
+    function scanCameraFrame() {
+      if (!cameraStream) return
+      const video = $('cameraVideo')
+      if (video.readyState < 2) return
+
+      const w = Math.min(video.videoWidth, 640)
+      const h = Math.min(video.videoHeight, 480)
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(video, 0, 0, w, h)
+
+      const imageData = ctx.getImageData(0, 0, w, h)
+      const code = jsQR(imageData.data, w, h)
+
+      if (code) {
+        const result = $('scanCamResult')
+        const text = $('scanCamText')
+        result.classList.add('show')
+        text.textContent = code.data
+        text.className = 'value'
+        stopCamera()
+        $('cameraBtn').textContent = '📷 重新扫码'
+        showToast('✅ 识别成功！')
+      }
+    }
+
+    // 页面加载时检测摄像头兼容性
+    checkCameraSupport()
+
+    // ====== Toast ======
+    let toastTimer = null
+    function showToast(msg) {
+      const el = $('toast')
+      el.textContent = msg; el.classList.add('show')
+      clearTimeout(toastTimer)
+      toastTimer = setTimeout(() => el.classList.remove('show'), 2500)
+    }
+  </script>
+</body>
+</html>

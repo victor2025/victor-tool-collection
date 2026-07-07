@@ -61,6 +61,25 @@
 </div>
 ```
 
+### 导航页 Tab 模式行为
+
+导航页 (`nav/index.html`) 使用多 iframe 显隐切换方案：
+
+- **每个工具 Tab 创建独立的 iframe**，只加载一次
+- **切 Tab 只切换 `display: none/block`**，不销毁/重建 DOM，不重新加载页面
+- **Tab 模式下不展示返回按钮**——顶部 Tab 栏始终有 🏠 首页 Tab 可点击回到主页
+- 关闭 Tab（✕）时同步移除对应的 iframe 容器，释放内存
+
+### 工具页顶部边距规范
+
+所有工具的标题（h1）距离页面顶部的高度必须统一。
+
+- **当前值：** `30px`
+- **实现方式：** 在 `<style>` 中定义 CSS 变量 `:root { --title-top: 30px; }`，body 的 padding-top 引用该变量：`padding: var(--title-top) 20px`
+- **修改方法：** 只需改 `--title-top` 的值，所有工具的标题顶部距离就会同步更新
+- **已覆盖工具：** base64、qrcode、json-formatter、jwt-decoder、webshell
+- **新增工具：** 必须遵循此规范，添加 `--title-top` CSS 变量并引用到 body padding-top
+
 ### 已有 README.md 的模块
 
 - `tools/webshell/README.md` — 已有较完整文档，维护时需同步更新

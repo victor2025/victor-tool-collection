@@ -1,5 +1,6 @@
 node_modules/
-dist/
+# score-board 有构建流程，dist 由 build 生成
+/tools/score-board/dist/
 *.log
 .DS_Store
 .vscode/

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Base64 编解码</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --title-top: 30px; }
+    body {
+      min-height: 100vh;
+      background: #000;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: var(--title-top) 20px;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.015) 0%, transparent 60%),
+        #000;
+    }
+    .container { max-width: 700px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 24px; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: #555; text-decoration: none; font-size: 13px;
+      margin-bottom: 16px; transition: color 0.2s;
+    }
+    .back-link:hover { color: #4ecdc4; }
+    .header h1 {
+      font-size: 24px; font-weight: 700; letter-spacing: 3px;
+      color: #ddd; margin-bottom: 4px;
+    }
+    .header .sub { font-size: 13px; color: #555; }
+
+    .tabs {
+      display: flex;
+      border-radius: 10px;
+      border: 1px solid #222;
+      overflow: hidden;
+      margin-bottom: 20px;
+      background: #0a0a0a;
+    }
+    .tab {
+      flex: 1; padding: 12px 0; text-align: center;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s; color: #555; user-select: none;
+    }
+    .tab.active {
+      color: #e0e0e0;
+      background: linear-gradient(180deg, #1a1a1a 0%, #151515 100%);
+    }
+    .tab:not(.active):hover { color: #888; background: #0f0f0f; }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .card {
+      background: linear-gradient(135deg, #111 0%, #151515 100%);
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 18px 18px 14px;
+      margin-bottom: 14px;
+    }
+
+    /* 文本框统一组件 */
+    .editor-label {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .editor-label .left {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .editor-label .left .name {
+      font-size: 13px; font-weight: 600; color: #888; letter-spacing: 1px;
+    }
+    .editor-label .left .count {
+      font-size: 11px; color: #444;
+    }
+    .editor-label .right {
+      display: flex; align-items: center; gap: 4px;
+    }
+    .editor-label .right .act {
+      padding: 2px 6px;
+      color: #555;
+      font-size: 12px;
+      cursor: pointer;
+      transition: color 0.12s;
+      user-select: none;
+    }
+    .editor-label .right .act:hover {
+      color: #4ecdc4;
+    }
+    .editor-label .right .act.clear:hover {
+      color: #ff6b6b;
+    }
+
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid #2a2a2a;
+      background: #0d0d0d;
+      color: #e0e0e0;
+      font-family: 'SF Mono', 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    textarea:focus { border-color: #4ecdc4; }
+    textarea::placeholder { color: #444; }
+
+    /* 普通按钮行 */
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid #333; border-radius: 7px;
+      background: linear-gradient(180deg, #222 0%, #1a1a1a 100%);
+      color: #ccc; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; text-align: center;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { color: #4ecdc4; border-color: #4ecdc4; }
+    .btn-primary:hover {
+      background: linear-gradient(180deg, #1a3a36 0%, #142a26 100%);
+      box-shadow: 0 0 12px rgba(78,205,196,0.2);
+    }
+
+    /* 图片上传 */
+    .upload-zone {
+      border: 2px dashed #222;
+      border-radius: 10px;
+      padding: 28px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .upload-zone:hover {
+      border-color: #4ecdc4;
+      background: #0d1a18;
+    }
+    .upload-zone .icon { font-size: 28px; margin-bottom: 4px; }
+    .upload-zone .text { font-size: 14px; color: #666; }
+    .upload-zone .sub { font-size: 12px; color: #444; margin-top: 2px; }
+    .upload-zone input { display: none; }
+
+    .img-preview {
+      display: none; align-items: center; gap: 14px;
+      padding: 12px; margin-top: 10px;
+      border-radius: 8px; border: 1px solid #1a1a1a; background: #0a0a0a;
+    }
+    .img-preview.show { display: flex; }
+    .img-preview img { max-width: 100px; max-height: 100px; border-radius: 6px; }
+    .img-preview .info { flex: 1; min-width: 0; }
+    .img-preview .info .name { font-size: 13px; color: #ccc; }
+    .img-preview .info .size { font-size: 11px; color: #555; margin-top: 2px; }
+
+    /* Base64 图片预览 */
+    .b64-preview {
+      display: none; align-items: center; justify-content: center;
+      padding: 12px; min-height: 60px;
+    }
+    .b64-preview.show { display: flex; }
+    .b64-preview img {
+      max-width: 180px; max-height: 180px;
+      border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    .b64-preview .invalid { font-size: 13px; color: #ff6b6b; }
+
+    .toast {
+      position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #222; color: #ccc; padding: 10px 24px; border-radius: 8px;
+      border: 1px solid #333; font-size: 13px;
+      opacity: 0; transition: all 0.3s ease; pointer-events: none; z-index: 100;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 600px) {
+      body { padding: 16px 12px; }
+      .card { padding: 14px 12px; }
+      textarea { min-height: 100px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">← 返回工具集</a>
+    <div class="header">
+      <h1>🔣 Base64 编解码</h1>
+      <div class="sub">文本 · 图片 · 互转</div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" id="tabText" onclick="switchTab('text')">📝 文本</div>
+      <div class="tab" id="tabImg" onclick="switchTab('img')">🖼️ 图片</div>
+    </div>
+
+    <!-- ===== 文本面板 ===== -->
+    <div class="panel active" id="panelText">
+      <!-- 原文 -->
+      <div class="card">
+        <div class="editor-label">
+          <div class="left">
+            <span class="name">📝 原文</span>
+            <span class="count" id="plainCnt">0</span>
+          </div>
+          <div class="right">
+            <span class="act clear" onclick="clearPlain()">清空</span>
+            <span class="act" onclick="copyPlain()">复制</span>
+          </div>
+        </div>
+        <textarea id="plainText" placeholder="输入原文…" spellcheck="false" oninput="onPlainInput()"></textarea>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="encodeText()">⬇ 编码为 Base64</button>
+        </div>
+      </div>
+
+      <!-- Base64 -->
+      <div class="card">
+        <div class="editor-label">
+          <div class="left">
+            <span class="name">🔐 Base64</span>
+            <span class="count" id="b64Cnt">0</span>
+          </div>
+          <div class="right">
+            <span class="act clear" onclick="clearB64()">清空</span>
+            <span class="act" onclick="copyB64()">复制</span>
+          </div>
+        </div>
+        <textarea id="b64Text" placeholder="输入 Base64 字符串…" spellcheck="false" oninput="onB64Input()"></textarea>
+        <div class="b64-preview" id="b64Preview">
+          <img id="b64PreviewImg" alt=""/>
+          <span class="invalid" id="b64PreviewInvalid"></span>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="decodeText()">⬆ 解码为原文</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 图片面板 ===== -->
+    <div class="panel" id="panelImg">
+      <!-- 上传图片 -->
+      <div class="card">
+        <div class="editor-label">
+          <div class="left"><span class="name">📤 图片 → Base64</span></div>
+          <div class="right">
+            <span class="act clear" id="clearImgBtn" onclick="clearImg()">移除</span>
+          </div>
+        </div>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('imgFile').click()">
+          <div class="icon">🖼️</div>
+          <div class="text">点击上传图片</div>
+          <div class="sub">PNG / JPG / GIF / WebP</div>
+          <input type="file" id="imgFile" accept="image/*" onchange="onImageUpload(event)"/>
+        </div>
+        <div class="img-preview" id="imgPreview">
+          <img id="imgPreviewSrc" alt=""/>
+          <div class="info">
+            <div class="name" id="imgName"></div>
+            <div class="size" id="imgSize"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 图片 Base64 文本 -->
+      <div class="card">
+        <div class="editor-label">
+          <div class="left">
+            <span class="name">🔐 图片 Base64</span>
+            <span class="count" id="imgB64Cnt">0</span>
+          </div>
+          <div class="right">
+            <span class="act clear" onclick="clearImgB64()">清空</span>
+            <span class="act" onclick="copyImgB64()">复制</span>
+          </div>
+        </div>
+        <textarea id="imgB64Text" placeholder="图片 Base64 数据 URL…" spellcheck="false" readonly></textarea>
+      </div>
+
+      <!-- Base64 → 图片 -->
+      <div class="card">
+        <div class="editor-label">
+          <div class="left"><span class="name">📥 Base64 → 图片</span></div>
+          <div class="right">
+            <span class="act clear" onclick="clearDecode()">清空</span>
+          </div>
+        </div>
+        <textarea id="b64ToImg" placeholder="粘贴图片 Base64，自动预览…" spellcheck="false" oninput="previewFromB64()"></textarea>
+        <div class="b64-preview" id="decodePreview">
+          <img id="decodePreviewImg" alt=""/>
+          <span class="invalid" id="decodePreviewInvalid"></span>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="downloadDecodedImg()">⬇ 下载图片</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const $ = id => document.getElementById(id)
+
+    function switchTab(name) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'))
+      $('tab' + (name === 'text' ? 'Text' : 'Img')).classList.add('active')
+      $('panel' + (name === 'text' ? 'Text' : 'Img')).classList.add('active')
+    }
+
+    function toB64(str) {
+      try { const b = new TextEncoder().encode(str); let s=''; for(const x of b) s+=String.fromCharCode(x); return btoa(s) } catch{return ''}
+    }
+    function fromB64(str) {
+      try { const b = atob(str.trim()); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return new TextDecoder().decode(u) } catch{return null}
+    }
+    function isImgUrl(s) { return /^data:image\//i.test(s.trim()) }
+
+    function showToast(msg) {
+      const el=$('toast'); el.textContent=msg; el.classList.add('show')
+      clearTimeout(window._tt); window._tt=setTimeout(()=>el.classList.remove('show'),2500)
+    }
+
+    function copyText(text, taId) {
+      if(!text){showToast('⚠️ 没有内容');return}
+      if (navigator.clipboard && location.protocol === 'https:') {
+        navigator.clipboard.writeText(text).then(()=>showToast('已复制')).catch(()=>fallbackCopy(text, taId))
+      } else {
+        fallbackCopy(text, taId)
+      }
+    }
+    function fallbackCopy(text, taId) {
+      const ta = taId ? $(taId) : document.createElement('textarea')
+      if (!taId) {
+        ta.value = text; ta.style.position='fixed'; ta.style.left='-9999px'
+        document.body.appendChild(ta)
+      }
+      ta.select(); ta.setSelectionRange(0, 999999)
+      try { document.execCommand('copy'); showToast('已复制') } catch { showToast('⚠️ 复制失败，请手动选择复制') }
+      if (!taId) document.body.removeChild(ta)
+    }
+
+    // ===== 文本面板 =====
+    function onPlainInput() { $('plainCnt').textContent=$('plainText').value.length }
+    function onB64Input() {
+      $('b64Cnt').textContent=$('b64Text').value.length
+      const v=$('b64Text').value.trim(), p=$('b64Preview'), img=$('b64PreviewImg'), inv=$('b64PreviewInvalid')
+      img.style.display='none'; inv.style.display='none'
+      if(isImgUrl(v)) {
+        img.src=v; img.onload=()=>{img.style.display='block';p.classList.add('show')}
+        img.onerror=()=>{inv.textContent='❌ 图片无效';inv.style.display='inline';p.classList.add('show')}
+      } else { p.classList.remove('show') }
+    }
+
+    function encodeText() {
+      const v=$('plainText').value; if(!v){showToast('⚠️ 请输入原文');return}
+      $('b64Text').value=toB64(v); $('b64Cnt').textContent=$('b64Text').value.length; onB64Input()
+    }
+    function decodeText() {
+      let v=$('b64Text').value.trim(); if(!v){showToast('⚠️ 请输入 Base64');return}
+      if(isImgUrl(v)) v=v.split(',')[1]
+      const r=fromB64(v)
+      if(r===null){showToast('⚠️ Base64 格式不正确');return}
+      $('plainText').value=r; $('plainCnt').textContent=r.length
+    }
+
+    function copyPlain(){copyText($('plainText').value,'plainText')}
+    function copyB64(){copyText($('b64Text').value,'b64Text')}
+    function clearPlain(){$('plainText').value='';$('plainCnt').textContent='0'}
+    function clearB64(){$('b64Text').value='';$('b64Cnt').textContent='0';$('b64Preview').classList.remove('show')}
+
+    // ===== 图片面板 =====
+    let _imgB64=''
+
+    function onImageUpload(e) {
+      const f=e.target.files[0]; if(!f)return
+      const r=new FileReader()
+      r.onload=ev=>{
+        _imgB64=ev.target.result
+        $('imgPreview').classList.add('show'); $('imgPreviewSrc').src=_imgB64
+        $('imgName').textContent=f.name
+        $('imgSize').textContent=f.size<1024?f.size+' B':(f.size/1024).toFixed(1)+' KB'
+        $('imgB64Text').value=_imgB64; $('imgB64Cnt').textContent=_imgB64.length
+        $('uploadZone').style.display='none'
+      }
+      r.readAsDataURL(f); e.target.value=''
+    }
+
+    function copyImgB64(){copyText($('imgB64Text').value,'imgB64Text')}
+    function clearImg(){_imgB64='';$('imgPreview').classList.remove('show');$('uploadZone').style.display='block';$('imgB64Text').value='';$('imgB64Cnt').textContent='0'}
+    function clearImgB64(){$('imgB64Text').value='';$('imgB64Cnt').textContent='0';clearImg()}
+
+    // ===== Base64 → 图片 =====
+    let _decUrl=''
+    function previewFromB64() {
+      const v=$('b64ToImg').value.trim(), p=$('decodePreview'), img=$('decodePreviewImg'), inv=$('decodePreviewInvalid')
+      img.style.display='none'; inv.style.display='none'; _decUrl=''
+      if(!v){p.classList.remove('show');return}
+      let url=isImgUrl(v)?v:'data:image/png;base64,'+v
+      img.src=url
+      img.onload=()=>{img.style.display='block';p.classList.add('show');_decUrl=url}
+      img.onerror=()=>{
+        if(!isImgUrl(v)&&!v.startsWith('data:')){
+          img.src='data:image/jpeg;base64,'+v
+          img.onload=()=>{img.style.display='block';p.classList.add('show');_decUrl='data:image/jpeg;base64,'+v}
+          img.onerror=()=>{inv.textContent='❌ 无法解析为图片';inv.style.display='inline';p.classList.add('show')}
+        } else { inv.textContent='❌ 无法解析为图片';inv.style.display='inline';p.classList.add('show') }
+      }
+    }
+    function downloadDecodedImg() {
+      if(!_decUrl){showToast('⚠️ 没有可下载的图片');return}
+      const a=document.createElement('a'); a.download='decoded.'+(_decUrl.includes('image/png')?'png':'jpg'); a.href=_decUrl; a.click()
+    }
+    function clearDecode(){$('b64ToImg').value='';$('decodePreview').classList.remove('show');_decUrl=''}
+  </script>
+</body>
+</html>

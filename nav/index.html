@@ -71,13 +71,6 @@
       border: none; display: block; background: #0a0a0a;
     }
 
-    .pane-loading {
-      display: flex; align-items: center; justify-content: center;
-      height: calc(100vh - 40px);
-      color: #333; font-size: 14px; letter-spacing: 1px;
-      background: #0a0a0a;
-    }
-
     .container { max-width: 800px; margin: 0 auto; }
 
     .header { text-align: center; margin-bottom: 20px; }
@@ -401,10 +394,7 @@
     </div>
   </div>
 </div>
-    <div class="tab-pane" id="pane-iframe">
-      <div class="pane-loading" id="paneLoading">加载中…</div>
-      <iframe class="pane-iframe" id="paneIframe" src="about:blank"></iframe>
-    </div>
+    <div id="pane-tool"></div>
   </div>
 
   <div class="footer">
@@ -465,9 +455,7 @@
       searchInput: document.getElementById('searchInput'),
       tabBar: document.getElementById('tabBar'),
       paneHome: document.getElementById('pane-home'),
-      paneIframe: document.getElementById('pane-iframe'),
-      iframe: document.getElementById('paneIframe'),
-      loading: document.getElementById('paneLoading'),
+      paneTool: document.getElementById('pane-tool'),
       catTabs: document.getElementById('catTabs'),
       allList: document.getElementById('allList'),
       settingsBtn: document.getElementById('settingsBtn'),
@@ -627,22 +615,20 @@
       });
     }
 
-    // ===== Tab 管理 =====
+    // ===== Tab 管理：多 iframe 显隐切换 =====
     function switchTab(tabId) {
       activeTabId = tabId;
       dom.tabBar.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
       const tabEl = dom.tabBar.querySelector(`.tab[data-tab="${tabId}"]`);
       if (tabEl) tabEl.classList.add('active');
+      // 所有 pane 隐藏
+      dom.paneHome.classList.remove('active');
+      dom.paneTool.querySelectorAll('.tool-pane').forEach(p => p.classList.remove('active'));
       if (tabId === 'home') {
         dom.paneHome.classList.add('active');
-        dom.paneIframe.classList.remove('active');
       } else {
-        const tab = tabs.find(t => t.id === tabId);
-        if (tab) {
-          dom.paneHome.classList.remove('active');
-          dom.paneIframe.classList.add('active');
-          dom.iframe.src = tab.url;
-        }
+        const pane = dom.paneTool.querySelector(`#tool-pane-${tabId}`);
+        if (pane) pane.classList.add('active');
       }
     }
 
@@ -651,14 +637,17 @@
       const idx = tabs.findIndex(t => t.id === tabId);
       if (idx < 0) return;
       tabs.splice(idx, 1);
+      // 移除 Tab 按钮
       const tabEl = dom.tabBar.querySelector(`.tab[data-tab="${tabId}"]`);
       if (tabEl) tabEl.remove();
-      if (!dom.paneHome.classList.contains('active')) {
-        const activeEl = dom.tabBar.querySelector('.tab.active');
-        if (!activeEl || activeEl.dataset.tab === tabId) {
-          const remaining = dom.tabBar.querySelectorAll('.tab');
-          switchTab(remaining.length > 0 ? remaining[remaining.length - 1].dataset.tab : 'home');
-        }
+      // 移除对应的 iframe pane
+      const pane = dom.paneTool.querySelector(`#tool-pane-${tabId}`);
+      if (pane) pane.remove();
+      // 切到下一个可用 Tab
+      const activeEl = dom.tabBar.querySelector('.tab.active');
+      if (!activeEl || activeEl.dataset.tab === tabId) {
+        const remaining = dom.tabBar.querySelectorAll('.tab');
+        switchTab(remaining.length > 0 ? remaining[remaining.length - 1].dataset.tab : 'home');
       }
       saveTabs();
     }
@@ -668,25 +657,43 @@
       if (existing) { switchTab(existing.id); return; }
       const tabId = 'tab-' + (++tabIdCounter);
       tabs.push({ id: tabId, slug: tool.slug, name: tool.name, icon: tool.icon, url: tool.url });
+      // 创建 Tab 按钮
       const tabEl = document.createElement('div');
       tabEl.className = 'tab';
       tabEl.dataset.tab = tabId;
-      tabEl.draggable = false; // draggable set after append
+      tabEl.draggable = false;
       tabEl.innerHTML = `<span class="tab-icon">${tool.icon}</span><span>${tool.name}</span><span class="tab-close">✕</span>`;
       tabEl.addEventListener('click', () => switchTab(tabId));
       tabEl.querySelector('.tab-close').addEventListener('click', (e) => closeTab(tabId, e));
       dom.tabBar.appendChild(tabEl);
       makeTabDraggable(tabEl, tabId);
       tabEl.scrollIntoView({ behavior: 'smooth', inline: 'end', block: 'nearest' });
+      // 创建独立的 iframe 容器（只加载一次，切换不销毁）
+      const pane = document.createElement('div');
+      pane.className = 'tab-pane tool-pane';
+      pane.id = 'tool-pane-' + tabId;
+      const iframe = document.createElement('iframe');
+      iframe.className = 'pane-iframe';
+      iframe.src = tool.url;
+      iframe.addEventListener('load', () => hideIframeBackLinks(iframe));
+      pane.appendChild(iframe);
+      dom.paneTool.appendChild(pane);
       switchTab(tabId);
       saveTabs();
+    }
+
+    function hideIframeBackLinks(iframe) {
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+        doc.querySelectorAll('.back-link').forEach(el => el.style.display = 'none');
+      } catch(e) {}
     }
 
     function closeAllToolTabs() {
       dom.tabBar.querySelectorAll('.tab:not([data-tab="home"])').forEach(el => el.remove());
       tabs.length = 0;
+      dom.paneTool.innerHTML = '';
       dom.paneHome.classList.add('active');
-      dom.paneIframe.classList.remove('active');
       dom.tabBar.querySelector('.tab[data-tab="home"]')?.classList.add('active');
       activeTabId = 'home';
     }
@@ -754,13 +761,6 @@
       });
     }
 
-    function hideIframeBackLinks() {
-      try {
-        const doc = dom.iframe.contentDocument || dom.iframe.contentWindow.document;
-        doc.querySelectorAll('.back-link').forEach(el => el.style.display = 'none');
-      } catch(e) {}
-    }
-
     function restoreTabs() {
       const saved = lsGet('vtc_tabs', null);
       if (!saved || !saved.slugs || !Array.isArray(saved.slugs)) return;
@@ -809,12 +809,6 @@
     });
 
     dom.tabBar.querySelector('.tab[data-tab="home"]').addEventListener('click', () => switchTab('home'));
-
-    dom.iframe.addEventListener('load', () => {
-      dom.loading.style.display = 'none';
-      dom.iframe.style.display = 'block';
-      hideIframeBackLinks();
-    });
 
     document.addEventListener('click', (e) => {
       const star = e.target.closest('.tool-star');

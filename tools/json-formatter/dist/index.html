@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JSON 格式化</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --title-top: 30px; }
+    body {
+      min-height: 100vh; height: 100vh; overflow: hidden;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: var(--title-top) 20px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      max-width: 960px; width: 100%;
+      flex: 1; min-height: 0;
+      display: flex; flex-direction: column;
+    }
+
+    .header { text-align: center; margin-bottom: 8px; flex-shrink: 0; }
+    .header h1 { font-size: 24px; font-weight: 700; color: #ffd93d; margin-bottom: 2px; }
+    .header .sub { font-size: 13px; color: #555; letter-spacing: 1px; }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: #555; text-decoration: none; font-size: 13px; margin-bottom: 8px;
+      transition: color 0.2s; flex-shrink: 0;
+    }
+    .back-link:hover { color: #ffd93d; }
+
+    /* ===== Tab Bar ===== */
+    .tab-bar {
+      display: flex; gap: 0; margin-bottom: 8px;
+      border-bottom: 1px solid #1a1a1a;
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      padding: 10px 24px; font-size: 14px; color: #555; cursor: pointer;
+      background: transparent; border: none; font-family: inherit;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .tab-btn:hover { color: #888; }
+    .tab-btn.active { color: #ffd93d; border-bottom-color: #ffd93d; }
+
+    .tab-content { display: none; }
+    .tab-content.active {
+      display: flex; flex-direction: column;
+      flex: 1; min-height: 0;
+    }
+
+    /* ===== Toolbar ===== */
+    .toolbar {
+      display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
+      align-items: center; flex-shrink: 0;
+    }
+    .toolbar .title { font-size: 12px; color: #666; letter-spacing: 1px; margin-right: auto; text-transform: uppercase; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 7px 16px; border: 1px solid #333; border-radius: 6px;
+      background: #1a1a1a; color: #ccc; font-size: 13px; cursor: pointer;
+      transition: all 0.15s; font-family: inherit;
+    }
+    .btn:hover { border-color: #ffd93d; color: #ffd93d; background: #1a1a10; }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: #2a2820; border-color: #ffd93d; color: #ffd93d; }
+    .btn-primary:hover { background: #3a3820; }
+    .btn-danger { color: #ff6b6b; }
+    .btn-danger:hover { border-color: #ff6b6b; color: #ff6b6b; background: #1a1010; }
+    .btn-success { color: #4ecdc4; }
+    .btn-success:hover { border-color: #4ecdc4; color: #4ecdc4; background: #101a18; }
+
+    /* ===== Toggle & Depth ===== */
+    .toggle-label {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 13px; color: #888; cursor: pointer;
+      padding: 5px 10px; border: 1px solid #222; border-radius: 6px;
+      background: #0f0f0f; user-select: none;
+    }
+    .toggle-label input[type="checkbox"] { accent-color: #4ecdc4; }
+    .toggle-label:hover { border-color: #333; color: #aaa; }
+
+    .depth-control {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 13px; color: #888;
+      padding: 5px 10px; border: 1px solid #222; border-radius: 6px;
+      background: #0f0f0f;
+    }
+    .depth-control input[type="number"] {
+      width: 44px; padding: 2px 4px;
+      background: #111; border: 1px solid #333; border-radius: 4px;
+      color: #ddd; font-size: 13px; text-align: center;
+      -moz-appearance: textfield;
+    }
+    .depth-control input[type="number"]::-webkit-outer-spin-button,
+    .depth-control input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    /* ===== Editor Panes ===== */
+    .editor-pane {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+      flex: 1; min-height: 0;
+    }
+
+    .pane {
+      background: #111; border: 1px solid #222; border-radius: 10px;
+      display: flex; flex-direction: column;
+      overflow: hidden; min-height: 0;
+    }
+    .pane-header {
+      display: flex; align-items: center; gap: 8px; justify-content: space-between;
+      padding: 8px 14px; border-bottom: 1px solid #1a1a1a;
+      font-size: 12px; color: #555; letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+    .pane-header .left { display: flex; align-items: center; gap: 8px; }
+    .pane-header .right { display: flex; align-items: center; gap: 4px; }
+    .pane-header .badge {
+      font-size: 10px; padding: 1px 7px; border-radius: 3px;
+      background: #1a1a1a; color: #666;
+    }
+    .pane-header .badge.ok { background: #1a2a28; color: #4ecdc4; }
+    .pane-header .badge.err { background: #2a1818; color: #ff6b6b; }
+    .pane-header .act {
+      padding: 2px 6px; color: #555; font-size: 12px; cursor: pointer;
+      transition: color 0.12s; user-select: none;
+    }
+    .pane-header .act:hover { color: #4ecdc4; }
+    .pane-header .act.clear:hover { color: #ff6b6b; }
+
+    textarea, .output {
+      width: 100%; flex: 1; min-height: 0;
+      background: #0d0d0d; border: none; outline: none;
+      color: #d4d4d4; font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+      font-size: 13px; line-height: 1.6; padding: 14px;
+      resize: vertical; tab-size: 2;
+    }
+    textarea::placeholder { color: #333; }
+    textarea:focus { background: #0a0a0a; }
+    .output-wrap {
+      flex: 1; min-height: 0;
+      display: flex; flex-direction: column;
+    }
+    .output {
+      white-space: pre-wrap; word-break: break-all;
+      overflow-y: auto;
+    }
+    .output.error { color: #ff6b6b; }
+    .output.empty { color: #333; }
+    .output .key { color: #9cdcfe; }
+    .output .val-string { color: #ce9178; }
+    .output .val-number { color: #b5cea8; }
+    .output .val-bool { color: #569cd6; }
+    .output .val-null { color: #569cd6; }
+    .output .bracket { color: #dcdcaa; }
+    .output .op { color: #888; }
+
+    .status-bar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 6px 14px; border-top: 1px solid #1a1a1a;
+      font-size: 12px; color: #444;
+      flex-shrink: 0;
+    }
+    .status-bar .stat { display: flex; align-items: center; gap: 4px; }
+    .status-bar .stat .val { color: #888; }
+
+    .footer { text-align: center; margin-top: 8px; font-size: 12px; color: #333; flex-shrink: 0; }
+
+    @media (max-width: 700px) {
+      .editor-pane { grid-template-columns: 1fr; }
+      body { padding: 12px 12px 12px; }
+    }
+
+    /* Escape output shows single-line string */
+    #escapeOutput .escaped-str { color: #ce9178; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">← 返回工具集</a>
+
+    <div class="header">
+      <h1>{ } JSON 工具</h1>
+      <div class="sub">格式化 · 转义 · 反转义嵌套</div>
+    </div>
+
+    <!-- ========== Tab Buttons ========== -->
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="format">格式化</button>
+      <button class="tab-btn" data-tab="escape">转义</button>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- TAB: 格式化                                                        -->
+    <!-- ================================================================ -->
+    <div id="tab-format" class="tab-content active">
+      <div class="toolbar">
+        <span class="title">操作</span>
+        <button class="btn btn-primary" onclick="format()">▸ 格式化</button>
+        <label class="toggle-label">
+          <input type="checkbox" id="unescapeCheck"> 反转义嵌套 JSON
+        </label>
+        <span class="depth-control">
+          层数 <input type="number" id="unescapeDepth" value="1" min="1" max="20">
+        </span>
+        <button class="btn" onclick="copyResult()">📋 复制结果</button>
+        <button class="btn btn-danger" onclick="clearAll()">✕ 清空</button>
+      </div>
+
+      <div class="editor-pane">
+        <!-- 输入 -->
+        <div class="pane">
+          <div class="pane-header">
+            <span class="left">输入 <span id="inputLabel" class="badge">等待输入</span></span>
+            <span class="right">
+              <span class="act clear" onclick="clearInput()">清空</span>
+              <span class="act" onclick="copyInput()">复制</span>
+            </span>
+          </div>
+          <textarea id="input" placeholder="在此粘贴或输入 JSON …" spellcheck="false"></textarea>
+        </div>
+
+        <!-- 输出 -->
+        <div class="pane">
+          <div class="pane-header">
+            <span class="left">输出 <span id="outputLabel" class="badge">就绪</span></span>
+            <span class="right">
+              <span class="act clear" onclick="clearOutput()">清空</span>
+              <span class="act" onclick="copyResult()">复制</span>
+            </span>
+          </div>
+          <div class="output-wrap">
+            <div id="output" class="output empty">等待输入…</div>
+          </div>
+          <div class="status-bar">
+            <span class="stat">行 <span id="lineCount" class="val">0</span></span>
+            <span class="stat">字符 <span id="charCount" class="val">0</span></span>
+            <span class="stat" id="sizeInfo"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- TAB: 转义                                                        -->
+    <!-- ================================================================ -->
+    <div id="tab-escape" class="tab-content">
+      <div class="toolbar">
+        <span class="title">操作</span>
+        <button class="btn btn-primary" onclick="doEscape()">▸ 转义为字符串</button>
+        <button class="btn" onclick="copyEscapeResult()">📋 复制结果</button>
+        <button class="btn btn-danger" onclick="clearEscape()">✕ 清空</button>
+      </div>
+
+      <div class="editor-pane">
+        <!-- 输入 -->
+        <div class="pane">
+          <div class="pane-header">
+            <span class="left">输入 JSON <span id="escapeInputLabel" class="badge">等待输入</span></span>
+            <span class="right">
+              <span class="act clear" onclick="clearEscapeInput()">清空</span>
+              <span class="act" onclick="copyEscapeInput()">复制</span>
+            </span>
+          </div>
+          <textarea id="escapeInput" placeholder="在此粘贴要转义的 JSON 对象或数组…" spellcheck="false"></textarea>
+        </div>
+
+        <!-- 输出 -->
+        <div class="pane">
+          <div class="pane-header">
+            <span class="left">转义结果 <span id="escapeOutputLabel" class="badge">就绪</span></span>
+            <span class="right">
+              <span class="act clear" onclick="clearEscapeOutput()">清空</span>
+              <span class="act" onclick="copyEscapeResult()">复制</span>
+            </span>
+          </div>
+          <div class="output-wrap">
+            <div id="escapeOutput" class="output empty">等待输入…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">JSON 工具 · 纯浏览器端处理 · 不传输任何数据</div>
+  </div>
+
+  <script>
+    // ================================================================
+    // Tab switching
+    // ================================================================
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // ================================================================
+    // DOM refs
+    // ================================================================
+    const $input = document.getElementById('input');
+    const $output = document.getElementById('output');
+    const $inputLabel = document.getElementById('inputLabel');
+    const $outputLabel = document.getElementById('outputLabel');
+    const $lineCount = document.getElementById('lineCount');
+    const $charCount = document.getElementById('charCount');
+    const $sizeInfo = document.getElementById('sizeInfo');
+    const $unescapeCheck = document.getElementById('unescapeCheck');
+    const $unescapeDepth = document.getElementById('unescapeDepth');
+
+    const $escapeInput = document.getElementById('escapeInput');
+    const $escapeOutput = document.getElementById('escapeOutput');
+    const $escapeInputLabel = document.getElementById('escapeInputLabel');
+    const $escapeOutputLabel = document.getElementById('escapeOutputLabel');
+
+    // ================================================================
+    // Token-based JSON formatter (preserves original values)
+    // ================================================================
+    function tokenize(raw) {
+      const tokens = [];
+      let i = 0;
+      while (i < raw.length) {
+        const ch = raw[i];
+        if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r') { i++; continue; }
+        if (ch === '"') {
+          let str = '"';
+          i++;
+          while (i < raw.length) {
+            const c = raw[i];
+            str += c;
+            i++;
+            if (c === '"') break;
+            if (c === '\\' && i < raw.length) { str += raw[i]; i++; }
+          }
+          tokens.push({ type: 'string', value: str });
+          continue;
+        }
+        if ('{}[]:,'.includes(ch)) {
+          tokens.push({ type: ch === ':' || ch === ',' ? 'punct' : 'bracket', value: ch });
+          i++;
+          continue;
+        }
+        let val = '';
+        while (i < raw.length && ![' ', '\t', '\n', '\r', ',', '}', ']', ':'].includes(raw[i])) {
+          val += raw[i];
+          i++;
+        }
+        tokens.push({ type: 'value', value: val });
+      }
+      return tokens;
+    }
+
+    function prettyPrint(tokens) {
+      const lines = [];
+      let indent = '';
+      const INDENT = '  ';
+      let currentLine = '';
+      let expectValue = false;
+
+      function flushLine() {
+        if (currentLine !== '') {
+          lines.push(indent + currentLine);
+          currentLine = '';
+        }
+      }
+
+      for (let idx = 0; idx < tokens.length; idx++) {
+        const tok = tokens[idx];
+        if (tok.type === 'punct') {
+          if (tok.value === ':') { currentLine += ': '; expectValue = true; }
+          else { currentLine += ','; flushLine(); }
+          continue;
+        }
+        if (tok.type === 'bracket') {
+          if (tok.value === '{' || tok.value === '[') {
+            const next = idx + 1 < tokens.length ? tokens[idx + 1] : null;
+            const isSingle = next && next.type === 'bracket' &&
+              ((tok.value === '{' && next.value === '}') || (tok.value === '[' && next.value === ']'));
+            if (isSingle) {
+              if (expectValue) { currentLine += tok.value === '{' ? '{}' : '[]'; expectValue = false; }
+              else { if (currentLine !== '') flushLine(); lines.push(indent + (tok.value === '{' ? '{}' : '[]')); }
+              idx++;
+            } else {
+              if (expectValue) { currentLine += tok.value === '{' ? '{' : '['; flushLine(); expectValue = false; }
+              else { if (currentLine !== '') flushLine(); lines.push(indent + (tok.value === '{' ? '{' : '[')); }
+              indent += INDENT;
+            }
+          } else {
+            indent = indent.slice(0, -INDENT.length);
+            if (currentLine !== '') flushLine();
+            lines.push(indent + tok.value);
+          }
+          continue;
+        }
+        if (expectValue) { currentLine += tok.value; expectValue = false; }
+        else { if (currentLine !== '') flushLine(); currentLine = tok.value; }
+      }
+      if (currentLine !== '') flushLine();
+      return lines.join('\n');
+    }
+
+    function formatJSON(raw) {
+      return prettyPrint(tokenize(raw));
+    }
+
+    // ================================================================
+    // Reverse-escape: recursively unescape JSON string fields
+    // ================================================================
+    function unescapeNested(value, depth) {
+      if (depth <= 0) return value;
+
+      if (typeof value === 'string') {
+        // First check if the entire string is a JSON object/array
+        const trimmed = value.trim();
+        if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+            (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            // Only recurse if the result is an object or array (not just a string/number)
+            if (parsed !== null && typeof parsed === 'object') {
+              return unescapeNested(parsed, depth - 1);
+            }
+            // If it's a primitive, keep original string
+            if (typeof parsed === 'string') {
+              // It was a JSON string within a string - could be double-escaped
+              return unescapeNested(parsed, depth);
+            }
+            return value;
+          } catch {
+            return value;
+          }
+        }
+        return value;
+      }
+
+      if (Array.isArray(value)) {
+        return value.map(v => unescapeNested(v, depth));
+      }
+
+      if (value !== null && typeof value === 'object') {
+        const result = {};
+        for (const key in value) {
+          result[key] = unescapeNested(value[key], depth);
+        }
+        return result;
+      }
+
+      return value;
+    }
+
+    // ================================================================
+    // Syntax highlighting
+    // ================================================================
+    function highlightSyntax(json) {
+      let h = json
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      h = h.replace(/("(?:[^"\\]|\\.)*")(\s*:)/g, '<span class="key">$1</span>$2');
+      h = h.replace(/(: )("(?:[^"\\]|\\.)*")/g, '$1<span class="val-string">$2</span>');
+      h = h.replace(/\b(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\b/g, '<span class="val-number">$1</span>');
+      h = h.replace(/\b(true|false)\b/g, '<span class="val-bool">$1</span>');
+      h = h.replace(/\bnull\b/g, '<span class="val-null">$1</span>');
+      h = h.replace(/([{}[\]])/g, '<span class="bracket">$1</span>');
+      return h;
+    }
+
+    function updateStats(text) {
+      const lines = text ? text.split('\n').length : 0;
+      const chars = text ? text.length : 0;
+      $lineCount.textContent = lines;
+      $charCount.textContent = chars.toLocaleString();
+      if (chars > 0) {
+        $sizeInfo.innerHTML = '· 大小 <span class="val">' + (chars / 1024).toFixed(1) + ' KB</span>';
+      } else {
+        $sizeInfo.innerHTML = '';
+      }
+    }
+
+    // ================================================================
+    // JSON stringify with formatting (for unescape output)
+    // ================================================================
+    function jsonStringifyPretty(obj) {
+      return JSON.stringify(obj, null, 2);
+    }
+
+    // ================================================================
+    // Format action
+    // ================================================================
+    function format() {
+      const raw = $input.value;
+      if (!raw.trim()) {
+        $output.textContent = '请先输入 JSON';
+        $output.className = 'output error';
+        return;
+      }
+
+      // First, try to parse for semantic operations (unescape)
+      let parsed;
+      let parseOk = true;
+      try { parsed = JSON.parse(raw); } catch (e) { parseOk = false; }
+
+      let resultStr;
+      if (parseOk && $unescapeCheck.checked) {
+        const depth = parseInt($unescapeDepth.value, 10) || 1;
+        try {
+          const unescaped = unescapeNested(parsed, depth);
+          resultStr = jsonStringifyPretty(unescaped);
+        } catch (e) {
+          $output.textContent = '❌ 反转义失败：' + e.message;
+          $output.className = 'output error';
+          $inputLabel.textContent = '✗ 错误';
+          $inputLabel.className = 'badge err';
+          $outputLabel.textContent = '✗ 失败';
+          $outputLabel.className = 'badge err';
+          return;
+        }
+      } else {
+        // Pure text formatting (no parse needed)
+        try {
+          resultStr = formatJSON(raw);
+        } catch (e) {
+          $output.textContent = '❌ 格式化失败：' + e.message;
+          $output.className = 'output error';
+          $inputLabel.textContent = '✗ 错误';
+          $inputLabel.className = 'badge err';
+          $outputLabel.textContent = '✗ 失败';
+          $outputLabel.className = 'badge err';
+          return;
+        }
+      }
+
+      $output.innerHTML = highlightSyntax(resultStr);
+      $output.className = 'output';
+      $inputLabel.textContent = parseOk ? '✓ 有效' : '⚠ 待修正';
+      $inputLabel.className = parseOk ? 'badge ok' : 'badge err';
+      $outputLabel.textContent = '✓ 完成';
+      $outputLabel.className = 'badge ok';
+      updateStats(resultStr);
+    }
+
+    function copyResult() {
+      const text = $output.textContent;
+      if (!text || text === '请先输入 JSON' || text === '等待输入…') return;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('#tab-format .btn:nth-child(4)');
+        const orig = btn.textContent;
+        btn.textContent = '✓ 已复制';
+        setTimeout(() => btn.textContent = orig, 1500);
+      }).catch(() => {});
+    }
+
+    function copyInput() {
+      navigator.clipboard.writeText($input.value).catch(() => {});
+    }
+
+    function clearInput() {
+      $input.value = '';
+      $inputLabel.textContent = '等待输入';
+      $inputLabel.className = 'badge';
+      updateStats('');
+    }
+
+    function clearOutput() {
+      $output.textContent = '等待输入…';
+      $output.className = 'output empty';
+      $outputLabel.textContent = '就绪';
+      $outputLabel.className = 'badge';
+      updateStats('');
+    }
+
+    function clearAll() {
+      $input.value = '';
+      $output.textContent = '等待输入…';
+      $output.className = 'output empty';
+      $inputLabel.textContent = '等待输入';
+      $inputLabel.className = 'badge';
+      $outputLabel.textContent = '就绪';
+      $outputLabel.className = 'badge';
+      updateStats('');
+    }
+
+    $input.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); format(); }
+    });
+    $input.addEventListener('input', () => {
+      $inputLabel.textContent = '输入中…';
+      $inputLabel.className = 'badge';
+      updateStats($input.value);
+    });
+
+    // ================================================================
+    // Escape tab
+    // ================================================================
+    function doEscape() {
+      const raw = $escapeInput.value.trim();
+      if (!raw) {
+        $escapeOutput.textContent = '请先输入 JSON';
+        $escapeOutput.className = 'output error';
+        return;
+      }
+
+      let parsed;
+      try { parsed = JSON.parse(raw); } catch (e) {
+        $escapeOutput.textContent = '❌ JSON 解析失败：' + e.message;
+        $escapeOutput.className = 'output error';
+        $escapeInputLabel.textContent = '✗ 无效 JSON';
+        $escapeInputLabel.className = 'badge err';
+        $escapeOutputLabel.textContent = '✗ 失败';
+        $escapeOutputLabel.className = 'badge err';
+        return;
+      }
+
+      // Convert to a JSON string and then wrap it as a string literal
+      const jsonStr = JSON.stringify(parsed);
+      // The escaped result is this string, shown as a valid JSON string value
+      const result = '"' + jsonStr.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+
+      $escapeOutput.innerHTML = '<span class="escaped-str">' + result.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>';
+      $escapeOutput.className = 'output';
+      $escapeInputLabel.textContent = '✓ 有效 JSON';
+      $escapeInputLabel.className = 'badge ok';
+      $escapeOutputLabel.textContent = '✓ 已转义';
+      $escapeOutputLabel.className = 'badge ok';
+    }
+
+    function copyEscapeResult() {
+      const text = $escapeOutput.textContent;
+      if (!text || text === '请先输入 JSON' || text === '等待输入…') return;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('#tab-escape .btn:nth-child(2)');
+        const orig = btn.textContent;
+        btn.textContent = '✓ 已复制';
+        setTimeout(() => btn.textContent = orig, 1500);
+      }).catch(() => {});
+    }
+
+    function copyEscapeInput() {
+      navigator.clipboard.writeText($escapeInput.value).catch(() => {});
+    }
+
+    function clearEscapeInput() {
+      $escapeInput.value = '';
+      $escapeInputLabel.textContent = '等待输入';
+      $escapeInputLabel.className = 'badge';
+    }
+
+    function clearEscapeOutput() {
+      $escapeOutput.textContent = '等待输入…';
+      $escapeOutput.className = 'output empty';
+      $escapeOutputLabel.textContent = '就绪';
+      $escapeOutputLabel.className = 'badge';
+    }
+
+    function clearEscape() {
+      $escapeInput.value = '';
+      $escapeOutput.textContent = '等待输入…';
+      $escapeOutput.className = 'output empty';
+      $escapeInputLabel.textContent = '等待输入';
+      $escapeInputLabel.className = 'badge';
+      $escapeOutputLabel.textContent = '就绪';
+      $escapeOutputLabel.className = 'badge';
+    }
+
+    $escapeInput.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); doEscape(); }
+    });
+    $escapeInput.addEventListener('input', () => {
+      $escapeInputLabel.textContent = '输入中…';
+      $escapeInputLabel.className = 'badge';
+    });
+
+    // Init stats
+    updateStats('');
+  </script>
+</body>
+</html>
