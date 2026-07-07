@@ -19,6 +19,7 @@
 | 📱 **二维码工具** | `/qrcode/` | 纯静态 HTML/CSS/JS + 第三方库 | 生成二维码、从图片扫码、调用摄像头扫码 |
 | 🔐 **JWT 解码** | `/jwt-decoder/` | 纯静态 HTML/CSS/JS | 解析 JWT Header/Payload，识别注册声明，过期校验 |
 | 🖥 **WebShell 终端** | `/webshell/` | ttyd + webshell-wrapper + su/SSH | 本地终端输入系统密码 · SSH 连接使用 SSH 账密 |
+| ⏰ **时间戳转换** | `/timestamp/` | 纯静态 HTML/CSS/JS | Unix 时间戳 · 秒/毫秒 · 日期 ↔ 时间戳双向转换 |
 
 ### 娱乐工具集
 
