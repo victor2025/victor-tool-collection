@@ -8,7 +8,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root { --title-top: 30px; --container-width: 860px; }
     body {
-      min-height: 100vh; overflow: hidden;
+      min-height: 100vh; overflow-y: auto;
       background: #000;
       color: #e0e0e0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -157,6 +157,9 @@
     .camera-container video {
       width: 100%; display: block;
     }
+    .camera-overlay, .camera-scanline { display: none; }
+    .camera-container.active .camera-overlay,
+    .camera-container.active .camera-scanline { display: block; }
     .camera-overlay {
       position: absolute; inset: 0;
       border: 3px solid rgba(78,205,196,0.3);
@@ -354,6 +357,47 @@
       decodeImage(event, 'scanCamResult', 'scanCamText')
     }
 
+    function tryDecode(canvas, ctx, w, h) {
+      // 尝试原图
+      var imageData = ctx.getImageData(0, 0, w, h)
+      var code = jsQR(imageData.data, w, h)
+      if (code) return code
+
+      // 尝试反色（处理浅色二维码）
+      var inverted = new Uint8ClampedArray(imageData.data)
+      for (var i = 0; i < inverted.length; i += 4) {
+        inverted[i] = 255 - inverted[i]
+        inverted[i + 1] = 255 - inverted[i + 1]
+        inverted[i + 2] = 255 - inverted[i + 2]
+      }
+      code = jsQR(inverted, w, h)
+      if (code) return code
+
+      // 尝试增强对比度
+      var contrast = new Uint8ClampedArray(imageData.data)
+      for (var j = 0; j < contrast.length; j += 4) {
+        for (var k = 0; k < 3; k++) {
+          var v = contrast[j + k]
+          contrast[j + k] = Math.max(0, Math.min(255, Math.round((v - 128) * 1.8 + 128)))
+        }
+      }
+      code = jsQR(contrast, w, h)
+      if (code) return code
+
+      // 尝试反色+增强对比度
+      var invContrast = new Uint8ClampedArray(inverted)
+      for (var a = 0; a < invContrast.length; a += 4) {
+        for (var b = 0; b < 3; b++) {
+          var v2 = invContrast[a + b]
+          invContrast[a + b] = Math.max(0, Math.min(255, Math.round((v2 - 128) * 1.8 + 128)))
+        }
+      }
+      code = jsQR(invContrast, w, h)
+      if (code) return code
+
+      return null
+    }
+
     function decodeImage(event, resultId, textId) {
       const file = event.target.files[0]
       if (!file) return
@@ -375,8 +419,7 @@
           canvas.height = h
           ctx.drawImage(img, 0, 0, w, h)
 
-          const imageData = ctx.getImageData(0, 0, w, h)
-          const code = jsQR(imageData.data, w, h)
+          const code = tryDecode(canvas, ctx, w, h)
 
           const result = $(resultId)
           const text = $(textId)
@@ -444,6 +487,7 @@
         btn.textContent = '⏹ 停止'
         btn.disabled = false
         $('cameraHint').textContent = '将二维码对准摄像头，自动识别'
+        document.querySelector('.camera-container').classList.add('active')
 
         scanInterval = setInterval(() => scanCameraFrame(), 500)
       }).catch(err => {
@@ -462,6 +506,7 @@
       }
       $('cameraVideo').srcObject = null
       $('cameraBtn').textContent = '📷 启动摄像头'
+      document.querySelector('.camera-container').classList.remove('active')
     }
 
     function scanCameraFrame() {
@@ -477,8 +522,7 @@
       const ctx = canvas.getContext('2d')
       ctx.drawImage(video, 0, 0, w, h)
 
-      const imageData = ctx.getImageData(0, 0, w, h)
-      const code = jsQR(imageData.data, w, h)
+      const code = tryDecode(canvas, ctx, w, h)
 
       if (code) {
         const result = $('scanCamResult')
