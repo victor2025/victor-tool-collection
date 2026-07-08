@@ -413,6 +413,36 @@
     // ================================================================
     // Reverse-escape: recursively unescape JSON string fields
     // ================================================================
+    // One level of JSON string unescaping (\\x -> actual char)
+    function unescapeContent(str) {
+      let result = '';
+      for (let i = 0; i < str.length; i++) {
+        if (str[i] === '\\' && i + 1 < str.length) {
+          const next = str[i + 1];
+          if (next === '"') result += '"';
+          else if (next === '\\') result += '\\';
+          else if (next === 'n') result += '\n';
+          else if (next === 'r') result += '\r';
+          else if (next === 't') result += '\t';
+          else if (next === '/') result += '/';
+          else if (next === 'u') {
+            const hex = str.slice(i + 2, i + 6);
+            if (/^[0-9a-fA-F]{4}$/.test(hex)) {
+              result += String.fromCharCode(parseInt(hex, 16));
+              i += 5;
+              continue;
+            }
+          } else {
+            result += '\\' + next;
+          }
+          i++;
+        } else {
+          result += str[i];
+        }
+      }
+      return result;
+    }
+
     // ================================================================
     // Text-level unescape (preserves large numbers)
     // ================================================================
@@ -426,18 +456,19 @@
 
         if (tok.type === 'string') {
           // Extract the string content (between quotes)
-          let inner = tok.raw;
+          let inner = tok.value;
           // Already includes quotes, check if inner value is JSON
           const content = inner.slice(1, -1); // remove surrounding quotes
           const trimmed = content.trim();
 
           if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
               (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-            // Tokenize and recursively unescape the inner JSON string
-            const innerTokens = tokenize(trimmed);
+            // Unescape one level first, then tokenize and recurse
+            const unescapedInner = unescapeContent(trimmed);
+            const innerTokens = tokenize(unescapedInner);
             const unescaped = unescapeTokens(innerTokens, depth - 1);
-            const pretty = prettyPrint(unescaped);
-            result.push({ type: 'value', value: pretty });
+            // Spread inner tokens so prettyPrint handles indentation uniformly
+            for (const t of unescaped) result.push(t);
           } else {
             result.push(tok);
           }
