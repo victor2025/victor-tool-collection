@@ -16,6 +16,12 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    textarea, .output, #escapeOutput {
+      user-select: text;
+      -webkit-user-select: text;
     }
     .container {
       max-width: var(--container-width); width: 100%;
@@ -92,14 +98,18 @@
       padding: 5px 10px; border: 1px solid #222; border-radius: 6px;
       background: #0f0f0f;
     }
-    .depth-control input[type="number"] {
-      width: 44px; padding: 2px 4px;
-      background: #111; border: 1px solid #333; border-radius: 4px;
-      color: #ddd; font-size: 13px; text-align: center;
-      -moz-appearance: textfield;
+    .depth-btn {
+      width: 26px; height: 26px; padding: 0;
+      background: #1a1a1a; border: 1px solid #333; border-radius: 4px;
+      color: #aaa; font-size: 16px; line-height: 1;
+      cursor: pointer; transition: all 0.12s;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: inherit;
     }
-    .depth-control input[type="number"]::-webkit-outer-spin-button,
-    .depth-control input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .depth-btn:hover { border-color: #4ecdc4; color: #4ecdc4; background: #1a2a28; }
+    .depth-btn:active { transform: scale(0.92); }
+    .depth-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .depth-val { width: 24px; text-align: center; color: #ddd; font-size: 14px; }
 
     /* ===== Editor Panes ===== */
     .editor-pane {
@@ -149,6 +159,8 @@
     .output {
       white-space: pre-wrap; word-break: break-all;
       overflow-y: auto;
+      user-select: text;
+      -webkit-user-select: text;
     }
     .output.error { color: #ff6b6b; }
     .output.empty { color: #333; }
@@ -206,7 +218,10 @@
           <input type="checkbox" id="unescapeCheck"> 反转义嵌套 JSON
         </label>
         <span class="depth-control">
-          层数 <input type="number" id="unescapeDepth" value="1" min="1" max="20">
+          层数
+          <button class="depth-btn" id="depthDec" onclick="depthChange(-1)" disabled>−</button>
+          <span class="depth-val" id="depthVal">1</span>
+          <button class="depth-btn" id="depthInc" onclick="depthChange(1)">+</button>
         </span>
         <button class="btn" onclick="copyResult()">📋 复制结果</button>
         <button class="btn btn-danger" onclick="clearAll()">✕ 清空</button>
@@ -313,7 +328,14 @@
     const $charCount = document.getElementById('charCount');
     const $sizeInfo = document.getElementById('sizeInfo');
     const $unescapeCheck = document.getElementById('unescapeCheck');
-    const $unescapeDepth = document.getElementById('unescapeDepth');
+    const $depthVal = document.getElementById('depthVal');
+    let depthValue = 1;
+    function depthChange(delta) {
+      depthValue = Math.max(1, Math.min(20, depthValue + delta));
+      $depthVal.textContent = depthValue;
+      document.getElementById('depthDec').disabled = depthValue <= 1;
+      document.getElementById('depthInc').disabled = depthValue >= 20;
+    }
 
     const $escapeInput = document.getElementById('escapeInput');
     const $escapeOutput = document.getElementById('escapeOutput');
@@ -375,7 +397,15 @@
         const tok = tokens[idx];
         if (tok.type === 'punct') {
           if (tok.value === ':') { currentLine += ': '; expectValue = true; }
-          else { currentLine += ','; flushLine(); }
+          else {
+            // 如果 currentLine 为空（紧接在 }] 之后），追加到上一行末尾
+            if (currentLine !== '') {
+              currentLine += ',';
+              flushLine();
+            } else if (lines.length > 0) {
+              lines[lines.length - 1] += ',';
+            }
+          }
           continue;
         }
         if (tok.type === 'bracket') {
@@ -393,8 +423,9 @@
               indent += INDENT;
             }
           } else {
-            indent = indent.slice(0, -INDENT.length);
+            // 先刷行（用当前缩进），再减缩进，最后推闭合括号
             if (currentLine !== '') flushLine();
+            indent = indent.slice(0, -INDENT.length);
             lines.push(indent + tok.value);
           }
           continue;
@@ -491,7 +522,7 @@
       h = h.replace(/(: )("(?:[^"\\]|\\.)*")/g, '$1<span class="val-string">$2</span>');
       h = h.replace(/\b(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\b/g, '<span class="val-number">$1</span>');
       h = h.replace(/\b(true|false)\b/g, '<span class="val-bool">$1</span>');
-      h = h.replace(/\bnull\b/g, '<span class="val-null">$1</span>');
+      h = h.replace(/\b(null)\b/g, '<span class="val-null">$1</span>');
       h = h.replace(/([{}[\]])/g, '<span class="bracket">$1</span>');
       return h;
     }
@@ -530,7 +561,7 @@
       let resultStr;
       if ($unescapeCheck.checked) {
         try {
-          const depth = parseInt($unescapeDepth.value, 10) || 1;
+          const depth = depthValue;
           const tokens = tokenize(raw);
           const unescaped = unescapeTokens(tokens, depth);
           resultStr = prettyPrint(unescaped);
@@ -722,6 +753,28 @@
     $escapeInput.addEventListener('input', () => {
       $escapeInputLabel.textContent = '输入中…';
       $escapeInputLabel.className = 'badge';
+    });
+
+    // 让输出框可聚焦，Ctrl+A 只选输出内容
+    $output.tabIndex = -1;
+    $escapeOutput.tabIndex = -1;
+
+    [$output, $escapeOutput].forEach(el => {
+      el.addEventListener('mousedown', () => { el.focus(); });
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.keyCode === 65)) {
+        const active = document.activeElement;
+        if (active === $output || active === $escapeOutput) {
+          e.preventDefault();
+          const range = document.createRange();
+          range.selectNodeContents(active);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      }
     });
 
     // Init stats
