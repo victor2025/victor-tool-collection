@@ -646,6 +646,17 @@
       } else {
         const pane = dom.paneTool.querySelector(`#tool-pane-${tabId}`);
         if (pane) pane.classList.add('active');
+        // 通知 iframe 上报访问（焦点切换触发）
+        notifyVisit(tabId);
+      }
+    }
+
+    function notifyVisit(tabId) {
+      const iframe = document.querySelector(`#tool-pane-${tabId} iframe`);
+      if (iframe && iframe.contentWindow) {
+        try {
+          iframe.contentWindow.postMessage({ type: 'vtc_track_visit' }, '*');
+        } catch(e) {}
       }
     }
 
@@ -692,7 +703,11 @@
       const iframe = document.createElement('iframe');
       iframe.className = 'pane-iframe';
       iframe.src = tool.url;
-      iframe.addEventListener('load', () => hideIframeBackLinks(iframe));
+      iframe.addEventListener('load', () => {
+        hideIframeBackLinks(iframe);
+        // iframe 初次加载完成后上报
+        notifyVisit(tabId);
+      });
       pane.appendChild(iframe);
       dom.paneTool.appendChild(pane);
       switchTab(tabId);
