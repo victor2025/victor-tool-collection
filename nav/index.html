@@ -634,6 +634,8 @@
 
     // ===== Tab 管理：多 iframe 显隐切换 =====
     function switchTab(tabId) {
+      // 切 Tab 时清除上次上报标记，允许新 Tab 上报
+      _lastNotifiedTab = null;
       activeTabId = tabId;
       dom.tabBar.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
       const tabEl = dom.tabBar.querySelector(`.tab[data-tab="${tabId}"]`);
@@ -653,9 +655,14 @@
       }
     }
 
+    var _lastNotifiedTab = null;
+
     function notifyVisit(tabId) {
       // 恢复阶段禁止上报
       if (window.__vtc_suppress_track) return;
+      // 同一 Tab 去重（防止 load 和 switchTab 同时触发）
+      if (_lastNotifiedTab === tabId) return;
+      _lastNotifiedTab = tabId;
       const iframe = document.querySelector(`#tool-pane-${tabId} iframe`);
       if (iframe && iframe.contentWindow) {
         try {
