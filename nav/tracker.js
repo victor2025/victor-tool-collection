@@ -31,6 +31,11 @@
     }
   }
 
+  // 非 iframe 场景（直接打开工具页面）：初始化时上报一次
+  if (window.self === window.top) {
+    reportVisit();
+  }
+
   // 来自导航页 Tab 切换的消息
   window.addEventListener('message', function (e) {
     if (e.data && e.data.type === 'vtc_track_visit') {
