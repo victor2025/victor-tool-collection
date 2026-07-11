@@ -1,30 +1,51 @@
 package config
 
-import "os"
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+)
 
-// Config holds all application configuration.
 type Config struct {
-	DBType        string // "postgres", "sqlite", "mysql"
-	DSN           string // connection string
-	ServerPort    string
-	AdminPassword string
-	JWTSecret     string
+	DBType     string `json:"db_type"`
+	DSN        string `json:"dsn"`
+	ServerPort string `json:"server_port"`
 }
 
-// Load reads configuration from environment variables with sensible defaults.
-func Load() *Config {
-	return &Config{
-		DBType:        getEnv("DB_TYPE", "postgres"),
-		DSN:           getEnv("DSN", "host=/var/run/postgresql user=vtc password=vtc123456 dbname=vtc sslmode=disable"),
-		ServerPort:    getEnv("SERVER_PORT", "8003"),
-		AdminPassword: getEnv("ADMIN_PASSWORD", "mima123123"),
-		JWTSecret:     getEnv("JWT_SECRET", "change-me-in-production"),
+func Load() (*Config, error) {
+	// Find config.json relative to executable
+	exe, err := os.Executable()
+	if err != nil {
+		return nil, fmt.Errorf("get executable path: %w", err)
 	}
-}
+	configPath := filepath.Join(filepath.Dir(exe), "config.json")
 
-func getEnv(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
+	// Also check project root
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		configPath = "config.json"
 	}
-	return fallback
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("read config.json: %w", err)
+	}
+
+	var cfg Config
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("parse config.json: %w", err)
+	}
+
+	// Validate required fields
+	if cfg.DSN == "" {
+		return nil, fmt.Errorf("config.json: dsn is required")
+	}
+	if cfg.DBType == "" {
+		cfg.DBType = "postgres"
+	}
+	if cfg.ServerPort == "" {
+		cfg.ServerPort = "8003"
+	}
+
+	return &cfg, nil
 }

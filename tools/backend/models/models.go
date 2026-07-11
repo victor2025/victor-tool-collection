@@ -2,7 +2,6 @@ package models
 
 import "time"
 
-// Visit records one page visit.
 type Visit struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	IP        string    `gorm:"size:64;not null;index" json:"ip"`
@@ -13,7 +12,6 @@ type Visit struct {
 
 func (Visit) TableName() string { return "visits" }
 
-// Admin stores the password hash (plain-text for this simple setup).
 type Admin struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	Password  string    `gorm:"size:128;not null" json:"-"`
@@ -22,3 +20,12 @@ type Admin struct {
 }
 
 func (Admin) TableName() string { return "admins" }
+
+type Session struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	Token     string    `gorm:"size:128;not null;uniqueIndex" json:"token"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+func (Session) TableName() string { return "sessions" }

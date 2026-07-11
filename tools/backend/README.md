@@ -1,51 +1,51 @@
 # Go Backend — Victor Tool Collection
 
-Gin + GORM 后端服务，替代原 Python 日志服务。
+Gin + GORM 后端服务，提供访问记录、认证鉴权、统计查询功能。
+
+## 配置文件
+
+启动时读取同目录下的 `config.json`，**不提交到 git**。
+
+```json
+{
+  "db_type": "postgres",
+  "dsn": "host=/var/run/postgresql user=vtc password=*** dbname=vtc sslmode=disable",
+  "server_port": "8003"
+}
+```
+
+| 字段 | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| `db_type` | 否 | `postgres` | 数据库类型，支持 `postgres` / `sqlite` / `mysql` |
+| `dsn` | 是 | — | 数据库连接字符串 |
+| `server_port` | 否 | `8003` | 监听端口 |
+
+### 首次启动
+
+首次启动时自动创建 `admins` 表并写入默认管理员密码 `admin888`。**请登录后立即修改密码。**
 
 ## API 接口
 
 | 端点 | 方法 | 鉴权 | 说明 |
 |------|------|------|------|
-| `/api/login` | POST | 无 | 登录，返回 token |
-| `/api/check-session` | POST | 无 | 验证 token 是否有效 |
+| `/api/login` | POST | 无 | 登录，设置 `vtc_session` cookie |
+| `/api/check-session` | GET | Cookie | 验证 session 是否有效 |
 | `/api/visit` | POST | 无 | 记录访问（body: `{"tool":"..."}`） |
-| `/api/change-password` | POST | Bearer token | 修改密码 |
-| `/api/stats` | GET | Bearer token | 访问统计 |
+| `/api/change-password` | POST | Cookie | 修改密码 |
+| `/api/stats` | GET | Cookie | 访问统计 |
 | `/api/health` | GET | 无 | 健康检查 |
 
-## 数据库
+## 数据库表
 
-支持 PostgreSQL（默认），可通过环境变量切换到 SQLite 或 MySQL。
-
-```bash
-# 当前配置
-DB_TYPE=postgres
-DB_DSN=host=/var/run/postgresql user=vtc password=*** dbname=vtc sslmode=disable
-
-# 切换到 SQLite
-DB_TYPE=sqlite DSN=backend.db
-
-# 切换到 MySQL（需安装 mysql driver）
-DB_TYPE=mysql DSN=user:pass@tcp(host:3306)/dbname
-```
-
-## 环境变量
-
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `DB_TYPE` | postgres | 数据库类型 |
-| `DSN` | (postgres 连接串) | 连接字符串 |
-| `SERVER_PORT` | 8003 | 监听端口 |
-| `ADMIN_PASSWORD` | mima123123 | 管理员密码 |
+- **visits** — 访问记录（id, ip, tool, user_agent, visited_at）
+- **admins** — 管理员密码（id, password, created_at, updated_at）
+- **sessions** — 登录会话（id, token, created_at, expires_at）
 
 ## 管理
 
 ```bash
-# 启动/停止/重启
 sudo systemctl start vtc-backend
 sudo systemctl stop vtc-backend
 sudo systemctl restart vtc-backend
-
-# 查看日志
 sudo journalctl -u vtc-backend -n 50 -f
 ```

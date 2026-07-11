@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"victor-tool-collection/backend/models"
@@ -67,6 +68,7 @@ type IPDetail struct {
 	IP        string           `json:"ip"`
 	ToolCount map[string]int64 `json:"tool_count"`
 	Total     int64            `json:"total"`
+	UserAgent string           `json:"user_agent,omitempty"`
 }
 
 // GetStats returns aggregated visit statistics.
@@ -119,12 +121,13 @@ func (h *VisitHandler) GetStats(c *gin.Context) {
 	// Optional IP details (per-IP tool breakdown)
 	if showDetail {
 		var ipTools []struct {
-			IP    string
-			Tool  string
-			Count int64
+			IP        string
+			Tool      string
+			Count     int64
+			UserAgent string
 		}
 		h.DB.Model(&models.Visit{}).
-			Select("ip, tool, count(*) as count").
+			Select("ip, tool, count(*) as count, max(user_agent) as user_agent").
 			Group("ip, tool").
 			Order("ip").
 			Find(&ipTools)
@@ -135,6 +138,7 @@ func (h *VisitHandler) GetStats(c *gin.Context) {
 				ipMap[r.IP] = &IPDetail{
 					IP:        r.IP,
 					ToolCount: make(map[string]int64),
+					UserAgent: r.UserAgent,
 				}
 			}
 			ipMap[r.IP].ToolCount[r.Tool] = r.Count
@@ -150,5 +154,48 @@ func (h *VisitHandler) GetStats(c *gin.Context) {
 
 	c.JSON(http.StatusOK, resp)
 }
+
+// GetVisits returns paginated visit records.
+// GET /api/visits?page=1&page_size=20&tool=xxx
+func (h *VisitHandler) GetVisits(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	toolFilter := c.Query("tool")
+
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	query := h.DB.Model(&models.Visit{})
+	if toolFilter != "" {
+		query = query.Where("tool = ?", toolFilter)
+	}
+
+	var total int64
+	query.Count(&total)
+
+	var visits []models.Visit
+	query.Order("id desc").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&visits)
+
+	// Get available tools for filter dropdown
+	var tools []string
+	h.DB.Model(&models.Visit{}).Distinct("tool").Pluck("tool", &tools)
+
+	c.JSON(http.StatusOK, gin.H{
+		"ok":    true,
+		"data":  visits,
+		"total": total,
+		"page":  page,
+		"size":  pageSize,
+		"tools": tools,
+	})
+}
+
 
 

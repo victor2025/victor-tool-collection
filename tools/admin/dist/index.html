@@ -85,19 +85,52 @@
     }
     .chart-card canvas { max-height: 280px; }
 
-    .ip-detail {
+    .ip-detail,
+    .visit-log {
       background: #111; border: 1px solid #222; border-radius: 10px; padding: 16px;
       margin-bottom: 24px;
     }
-    .ip-detail h3 { font-size: 14px; color: #888; letter-spacing: 1px; margin-bottom: 12px; }
-    .ip-detail table {
+    .ip-detail h3,
+    .visit-log h3 { font-size: 14px; color: #888; letter-spacing: 1px; margin-bottom: 12px; }
+    .ip-detail table,
+    .visit-log table {
       width: 100%; border-collapse: collapse; font-size: 13px;
     }
-    .ip-detail th, .ip-detail td {
+    .ip-detail th, .ip-detail td,
+    .visit-log th, .visit-log td {
       padding: 8px 10px; text-align: left; border-bottom: 1px solid #1a1a1a;
     }
-    .ip-detail th { color: #666; font-weight: 400; font-size: 11px; letter-spacing: 1px; }
-    .ip-detail td { color: #bbb; }
+    .ip-detail th,
+    .visit-log th { color: #666; font-weight: 400; font-size: 11px; letter-spacing: 1px; }
+    .ip-detail td,
+    .visit-log td { color: #bbb; }
+
+    .visit-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .visit-header h3 { margin-bottom: 0; }
+    .visit-filters {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .visit-filters select {
+      padding: 6px 10px; background: #111; border: 1px solid #333; border-radius: 6px;
+      color: #bbb; font-size: 13px; outline: none; font-family: inherit;
+    }
+    .visit-filters select:focus { border-color: #4ecdc4; }
+
+    .pagination {
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      margin-top: 12px; flex-wrap: wrap;
+    }
+    .pagination .page-info { font-size: 13px; color: #555; }
+    .pagination .page-jump { display: flex; align-items: center; gap: 4px; }
+    .pagination .page-jump input {
+      width: 56px; padding: 4px 8px; text-align: center;
+      background: #111; border: 1px solid #333; border-radius: 4px;
+      color: #bbb; font-size: 13px; outline: none; font-family: inherit;
+    }
+    .pagination .page-jump input:focus { border-color: #4ecdc4; }
 
     .logout-bar {
       display: flex; align-items: center; justify-content: flex-end; gap: 8px;
@@ -157,6 +190,7 @@
     @media (max-width: 600px) {
       .stats-row { grid-template-columns: repeat(2, 1fr); }
       .chart-grid { grid-template-columns: 1fr; }
+      .visit-header { flex-direction: column; align-items: flex-start; gap: 8px; }
     }
   </style>
 </head>
@@ -167,7 +201,6 @@
     <!-- ===== 登录页 ===== -->
     <div id="loginScreen">
       <h2>🔐 管理后台</h2>
-      <p style="color:#555;font-size:13px;margin-bottom:24px;">请输入密码查看访问统计</p>
       <div class="input-group">
         <label>密码</label>
         <input type="password" id="pwdInput" placeholder="输入密码…" autocomplete="off"/>
@@ -204,24 +237,71 @@
 
       <div class="ip-detail" id="ipDetail">
         <h3>🔍 IP 明细</h3>
-        <table><thead><tr><th>工具</th><th>IP</th><th>访问次数</th><th>最近访问</th></tr></thead><tbody id="ipBody"></tbody></table>
+        <table><thead><tr><th>工具</th><th>IP</th><th>访问次数</th><th>最近访问</th><th>UA</th></tr></thead><tbody id="ipBody"></tbody></table>
+      </div>
+
+      <div class="visit-log" id="visitLog">
+        <div class="visit-header">
+          <h3>📋 访问记录</h3>
+          <div class="visit-filters">
+            <select id="filterTool"><option value="">全部工具</option></select>
+            <button class="btn" id="visitSearchBtn">搜索</button>
+          </div>
+        </div>
+        <table><thead><tr><th>ID</th><th>IP</th><th>工具</th><th>UA</th><th>访问时间</th></tr></thead><tbody id="visitBody"></tbody></table>
+        <div class="pagination">
+          <button class="btn" id="prevPageBtn">← 上一页</button>
+          <span class="page-info" id="pageInfo"></span>
+          <div class="page-jump">
+            <input type="number" id="pageInput" min="1" value="1"/>
+            <button class="btn" id="goPageBtn">跳转</button>
+          </div>
+          <button class="btn" id="nextPageBtn">下一页 →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 修改密码弹窗 ===== -->
+  <div class="modal-overlay" id="pwdModal">
+    <div class="modal">
+      <h3>🔑 修改密码</h3>
+      <div class="input-group">
+        <label>当前密码</label>
+        <input type="password" id="oldPwd" autocomplete="off"/>
+      </div>
+      <div class="input-group">
+        <label>新密码</label>
+        <input type="password" id="newPwd" autocomplete="off"/>
+      </div>
+      <div class="input-group">
+        <label>确认新密码</label>
+        <input type="password" id="confirmPwd" autocomplete="off"/>
+      </div>
+      <div class="modal-msg" id="pwdMsg"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="pwdCancel">取消</button>
+        <button class="btn-primary" id="pwdSave">保存</button>
       </div>
     </div>
   </div>
 
   <script>
-    // ===== 密码配置（可修改） =====
-    const DEFAULT_PASSWORD = "admin888";
-    // ===== 状态 & API =====
-    let authToken = localStorage.getItem("vtc_token") || "";
-    let loggedIn = !!authToken;
+    // ===== API =====
+    const creds = { credentials: 'same-origin' };
 
     async function apiPost(path, body) {
       const res = await fetch(path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'same-origin',
         body: JSON.stringify(body)
       });
+      return res.json();
+    }
+
+    async function apiGet(path) {
+      const res = await fetch(path, { credentials: 'same-origin' });
       return res.json();
     }
 
@@ -241,9 +321,6 @@
       const pwd = pwdInput.value;
       const data = await apiPost("/api/login", { password: pwd });
       if (data.ok) {
-        authToken = data.token;
-        localStorage.setItem("vtc_token", authToken);
-        loggedIn = true;
         showDashboard();
       } else {
         loginError.textContent = "❌ " + (data.error || "登录失败");
@@ -255,10 +332,8 @@
     loginBtn.addEventListener('click', doLogin);
     pwdInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
 
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem("vtc_token");
-      authToken = "";
-      loggedIn = false;
+    logoutBtn.addEventListener('click', async () => {
+      await apiPost("/api/logout");
       loginScreen.style.display = 'block';
       dashboard.style.display = 'none';
       pwdInput.value = '';
@@ -273,16 +348,14 @@
       dashboard.style.display = 'block';
       document.querySelector('.back-link').style.display = 'none';
       loadStats();
+      loadVisits();
     }
 
     function num(n) { return n.toLocaleString(); }
 
     async function loadStats() {
       try {
-        const token = localStorage.getItem("vtc_token");
-        const res = await fetch('/api/stats?ip_detail=1', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
+        const res = await fetch('/api/stats?ip_detail=1', creds);
         const data = await res.json();
         renderStats(data);
       } catch(e) {
@@ -421,19 +494,106 @@
     function renderIpDetail(ipDetails) {
       const tbody = document.getElementById('ipBody');
       if (!ipDetails || ipDetails.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#444;padding:30px;">暂无数据</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#444;padding:30px;">暂无数据</td></tr>';
         return;
       }
       let html = '';
       ipDetails.forEach(detail => {
         Object.entries(detail.tool_count || {}).forEach(([tool, cnt]) => {
-          html += `<tr><td>${tool}</td><td>${detail.ip}</td><td>${cnt}</td><td>-</td></tr>`;
+          const ua = detail.user_agent ? detail.user_agent.substring(0, 50) + (detail.user_agent.length > 50 ? '...' : '') : '-';
+          html += `<tr><td>${tool}</td><td>${detail.ip}</td><td>${cnt}</td><td>-</td><td style="font-size:11px;color:#666;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${ua}">${ua}</td></tr>`;
         });
       });
       tbody.innerHTML = html;
     }
 
-    
+    // ===== 访问记录分页 =====
+    let visitPage = 1;
+    let visitTotal = 0;
+    let visitPageSize = 20;
+    let visitFilterTool = "";
+
+    const filterTool = document.getElementById('filterTool');
+    const visitBody = document.getElementById('visitBody');
+    const pageInfo = document.getElementById('pageInfo');
+    const pageInput = document.getElementById('pageInput');
+
+    async function loadVisits() {
+      try {
+        const res = await fetch(`/api/visits?page=${visitPage}&page_size=${visitPageSize}&tool=${encodeURIComponent(visitFilterTool)}`, creds);
+        const data = await res.json();
+        if (!data.ok) return;
+        renderVisits(data);
+      } catch(e) {
+        console.error('Failed to load visits', e);
+      }
+    }
+
+    function renderVisits(data) {
+      visitTotal = data.total;
+      const visits = data.data || [];
+
+      // Populate tool filter dropdown (only once)
+      if (data.tools && data.tools.length > 0 && filterTool.options.length <= 1) {
+        data.tools.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t;
+          opt.textContent = t;
+          filterTool.appendChild(opt);
+        });
+      }
+
+      // Render table
+      if (visits.length === 0) {
+        visitBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#444;padding:30px;">暂无数据</td></tr>';
+      } else {
+        let html = '';
+        visits.forEach(v => {
+          const t = new Date(v.visited_at);
+          const time = t.toLocaleString('zh-CN', { hour12: false });
+          const ua = v.user_agent ? v.user_agent.substring(0, 60) + (v.user_agent.length > 60 ? '...' : '') : '-';
+          html += `<tr><td>${v.id}</td><td>${v.ip}</td><td>${v.tool}</td><td style="font-size:11px;color:#666;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(v.user_agent || '').replace(/"/g, '&quot;')}">${ua}</td><td>${time}</td></tr>`;
+        });
+        visitBody.innerHTML = html;
+      }
+
+      // Pagination info
+      const totalPages = Math.max(1, Math.ceil(visitTotal / visitPageSize));
+      pageInfo.textContent = `第 ${visitPage} / ${totalPages} 页（共 ${num(visitTotal)} 条）`;
+      pageInput.value = visitPage;
+      pageInput.max = totalPages;
+    }
+
+    // Pagination event listeners
+    document.getElementById('prevPageBtn').addEventListener('click', () => {
+      if (visitPage > 1) { visitPage--; loadVisits(); }
+    });
+    document.getElementById('nextPageBtn').addEventListener('click', () => {
+      const totalPages = Math.max(1, Math.ceil(visitTotal / visitPageSize));
+      if (visitPage < totalPages) { visitPage++; loadVisits(); }
+    });
+    document.getElementById('goPageBtn').addEventListener('click', () => {
+      const totalPages = Math.max(1, Math.ceil(visitTotal / visitPageSize));
+      const p = parseInt(pageInput.value);
+      if (p >= 1 && p <= totalPages) {
+        visitPage = p;
+        loadVisits();
+      }
+    });
+    pageInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('goPageBtn').click();
+    });
+    document.getElementById('visitSearchBtn').addEventListener('click', () => {
+      visitFilterTool = filterTool.value;
+      visitPage = 1;
+      loadVisits();
+    });
+    filterTool.addEventListener('change', () => {
+      visitFilterTool = filterTool.value;
+      visitPage = 1;
+      loadVisits();
+    });
+
     // ===== 修改密码 =====
     const pwdModal = document.getElementById("pwdModal");
     const oldPwd = document.getElementById("oldPwd");
@@ -441,25 +601,25 @@
     const confirmPwd = document.getElementById("confirmPwd");
     const pwdMsg = document.getElementById("pwdMsg");
 
-    document.getElementById("refreshBtn").addEventListener("click", () => {
+    const el_refreshBtn=document.getElementById("refreshBtn");if(el_refreshBtn)el_refreshBtn.addEventListener("click", () => {
       loadStats();
     });
 
-    document.getElementById("changePwdBtn").addEventListener("click", () => {
+    const el_changePwdBtn=document.getElementById("changePwdBtn");if(el_changePwdBtn)el_changePwdBtn.addEventListener("click", () => {
       oldPwd.value = ""; newPwd.value = ""; confirmPwd.value = "";
       pwdMsg.textContent = "";
       pwdModal.classList.add("open");
       oldPwd.focus();
     });
 
-    document.getElementById("pwdCancel").addEventListener("click", () => {
+    const el_pwdCancel=document.getElementById("pwdCancel");if(el_pwdCancel)el_pwdCancel.addEventListener("click", () => {
       pwdModal.classList.remove("open");
     });
     pwdModal.addEventListener("click", (e) => {
       if (e.target === pwdModal) pwdModal.classList.remove("open");
     });
 
-    document.getElementById("pwdSave").addEventListener("click", async () => {
+    const el_pwdSave=document.getElementById("pwdSave");if(el_pwdSave)el_pwdSave.addEventListener("click", async () => {
       const old = oldPwd.value;
       const nu = newPwd.value;
       const confirm = confirmPwd.value;
@@ -476,7 +636,6 @@
       }
 
       const data = await apiPost("/api/change-password", {
-        token: authToken,
         old_password: old,
         new_password: nu
       });
@@ -494,33 +653,17 @@
       if (e.key === "Enter") document.getElementById("pwdSave").click();
     });
 
-    // ===== 初始化 =====
-    if (authToken) {
-      showDashboard();
-    }
+    // ===== 初始化：校验 session =====
+    (async function() {
+      try {
+        const data = await apiGet("/api/check-session");
+        if (data.ok) {
+          showDashboard();
+          return;
+        }
+      } catch(e) {}
+      // session 无效，显示登录页（默认 state）
+    })();
   </script>
-  <!-- ===== 修改密码弹窗 ===== -->
-  <div class="modal-overlay" id="pwdModal">
-    <div class="modal">
-      <h3>🔑 修改密码</h3>
-      <div class="input-group">
-        <label>当前密码</label>
-        <input type="password" id="oldPwd" autocomplete="off"/>
-      </div>
-      <div class="input-group">
-        <label>新密码</label>
-        <input type="password" id="newPwd" autocomplete="off"/>
-      </div>
-      <div class="input-group">
-        <label>确认新密码</label>
-        <input type="password" id="confirmPwd" autocomplete="off"/>
-      </div>
-      <div class="modal-msg" id="pwdMsg"></div>
-      <div class="modal-actions">
-        <button class="btn-cancel" id="pwdCancel">取消</button>
-        <button class="btn-primary" id="pwdSave">保存</button>
-      </div>
-    </div>
-  </div>
 </body>
 </html>
