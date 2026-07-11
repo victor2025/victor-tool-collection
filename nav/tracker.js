@@ -3,7 +3,7 @@
  *
  * 规则：
  * - Tab 模式（iframe 内）：nav 发 postMessage 才上报，每次切 Tab 都报
- * - 单页面模式（直接打开）：首次获得焦点/可见时上报一次，加载不报
+ * - 单页面模式（直接打开）：首次获得焦点/可见时上报一次，加载不报，刷新不报
  * - 其他情况一律不上报
  */
 (function () {
@@ -16,7 +16,6 @@
     .pop() || 'home';
 
   function report() {
-    // 非 iframe 模式下：页面级锁，只发一次
     if (window.__vtc_report_sent && window.self === window.top) return;
     window.__vtc_report_sent = true;
 
@@ -33,11 +32,16 @@
     window.addEventListener('message', function (e) {
       if (e.data && e.data.type === 'vtc_track_visit') report();
     });
-    return; // iframe 不执行下面的逻辑
+    return;
   }
 
   // ── 单页面模式（直接打开）──
-  // 页面加载时不报，等用户切到该页面/获得焦点才报
+  // 刷新页面不报，仅新导航时等焦点/可见才报
+  try {
+    var nav = performance.getEntriesByType('navigation')[0];
+    if (nav && nav.type === 'reload') return; // 刷新操作：彻底不报
+  } catch(e) {}
+
   function onActive() {
     report();
     window.removeEventListener('focus', onActive);
