@@ -634,8 +634,6 @@
 
     // ===== Tab 管理：多 iframe 显隐切换 =====
     function switchTab(tabId) {
-      // 切 Tab 时清除上次上报标记，允许新 Tab 上报
-      _lastNotifiedTab = null;
       activeTabId = tabId;
       dom.tabBar.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
       const tabEl = dom.tabBar.querySelector(`.tab[data-tab="${tabId}"]`);
