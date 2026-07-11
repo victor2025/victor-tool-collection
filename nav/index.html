@@ -651,15 +651,7 @@
       }
     }
 
-    function notifyVisit(tabId) {
-      if (window.__vtc_suppress_track) return;
-      const iframe = document.querySelector(`#tool-pane-${tabId} iframe`);
-      if (iframe && iframe.contentWindow) {
-        try {
-          iframe.contentWindow.postMessage({ type: 'vtc_track_visit' }, '*');
-        } catch(e) {}
-      }
-    }
+
 
     function closeTab(tabId, e) {
       e.stopPropagation();
@@ -706,8 +698,6 @@
       iframe.src = tool.url;
       iframe.addEventListener('load', () => {
         hideIframeBackLinks(iframe);
-        // 仅在仍为当前激活 Tab 时才上报（避免后台加载也计数）
-        if (activeTabId === tabId) notifyVisit(tabId);
       });
       pane.appendChild(iframe);
       dom.paneTool.appendChild(pane);
@@ -801,10 +791,6 @@
         saveTabs();
       });
     }
-
-    // ===== 页面级抑制上报 =====
-    window.__vtc_suppress_track = true;
-    window.addEventListener('load', function () { window.__vtc_suppress_track = false; });
 
     function restoreTabs() {
       const saved = lsGet('vtc_tabs', null);
