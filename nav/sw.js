@@ -1,14 +1,7 @@
-const CACHE = 'vtc-v1';
+const CACHE = 'vtc-v2';
 const PRECACHE = [
-  '/',
   '/manifest.json',
   '/icon.svg',
-  '/base64/',
-  '/qrcode/',
-  '/json-formatter/',
-  '/jwt-decoder/',
-  '/webshell/',
-  '/timestamp/',
 ];
 
 self.addEventListener('install', (e) => {
@@ -20,14 +13,24 @@ self.addEventListener('install', (e) => {
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys.filter(k => k !== CACHE).map(k => caches.delete(k))
-    ))
+    Promise.all([
+      caches.keys().then(keys => Promise.all(
+        keys.filter(k => k !== CACHE).map(k => caches.delete(k))
+      )),
+      self.clients.claim(),
+    ])
   );
 });
 
 self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
-  );
+  const url = new URL(e.request.url);
+  // 只缓存静态资源，HTML 页面不缓存（方便更新）
+  if (url.pathname.match(/\.(js|css|png|jpg|svg|ico|woff2?)$/)) {
+    e.respondWith(
+      caches.match(e.request).then(r => r || fetch(e.request))
+    );
+    return;
+  }
+  // 其他全部走网络
+  e.respondWith(fetch(e.request));
 });

@@ -780,5 +780,7 @@
     // Init stats
     updateStats('');
   </script>
+
+<script>fetch("/_log/log/visit",{method:"POST",body:JSON.stringify({tool:location.pathname.replace(/\/$/,"").split("/").pop()||"home"}),headers:{"Content-Type":"application/json"}})</script>
 </body>
 </html>

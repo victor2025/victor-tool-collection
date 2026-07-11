@@ -338,5 +338,7 @@
     // 初始化最近连接
     renderRecentHosts();
   </script>
+
+<script>fetch("/_log/log/visit",{method:"POST",body:JSON.stringify({tool:location.pathname.replace(/\/$/,"").split("/").pop()||"home"}),headers:{"Content-Type":"application/json"}})</script>
 </body>
 </html>

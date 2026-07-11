@@ -20,12 +20,19 @@
 | 🔐 **JWT 解码** | `/jwt-decoder/` | 纯静态 HTML/CSS/JS | 解析 JWT Header/Payload，识别注册声明，过期校验 |
 | 🖥 **WebShell 终端** | `/webshell/` | ttyd + webshell-wrapper + su/SSH | 本地终端输入系统密码 · SSH 连接使用 SSH 账密 |
 | ⏰ **时间戳转换** | `/timestamp/` | 纯静态 HTML/CSS/JS | Unix 时间戳 · 秒/毫秒 · 日期 ↔ 时间戳双向转换 |
+| 🔐 **管理后台** | `/admin/` | 纯静态 HTML/CSS/JS + Chart.js CDN | 密码登录 · 访问统计图表 · IP 明细 |
 
 ### 娱乐工具集
 
 | 工具 | 路径 | 技术栈 | 功能 |
 |------|------|--------|------|
 | 🏀 **记分板** | `/score-board/` | React + Vite | 可编辑队名、翻页动画显示、自动本地持久化 |
+
+### 生活工具集
+
+| 工具 | 路径 | 技术栈 | 功能 |
+|------|------|--------|------|
+| 🌪 **台风观测** | `/typhoon/` | 纯静态 HTML/CSS/JS（iframe 嵌入） | 中央气象台实时台风路径观测 |
 
 ---
 
@@ -38,13 +45,18 @@ victor-tool-collection/
 ├── nav/
 │   └── index.html           # 导航首页（端口 8001 根目录）
 ├── tools/
+│   ├── admin/               # 管理后台（访问统计）
 │   ├── base64/              # Base64 编解码工具
 │   ├── jwt-decoder/         # JWT 解码工具
 │   ├── qrcode/              # 二维码工具
 │   ├── score-board/         # 记分板（React）
+│   ├── typhoon/             # 台风观测工具
 │   └── webshell/            # Web 终端（ttyd）
+├── data/
+│   └── visits.db            # 访问统计数据库（SQLite）
 └── deploy/
     ├── README.md             # 部署说明
+    ├── visit-logger.py       # 访问日志服务（Python）
     └── nginx/
         └── port-8001.conf    # nginx 站点配置（端口 8001）
 ```

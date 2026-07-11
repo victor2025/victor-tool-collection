@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="pragma" content="no-cache"/>
+  <meta http-equiv="expires" content="0"/>
+  <title>台风观测</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --title-top: 30px; }
+    body {
+      min-height: 100vh;
+      background: #000;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: var(--title-top) 20px;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.015) 0%, transparent 60%),
+        #000;
+    }
+    .container { max-width: 100%; margin: 0 auto; padding: 0 20px; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: #555; text-decoration: none; font-size: 13px;
+      margin-bottom: 10px; transition: color 0.2s;
+    }
+    .back-link:hover { color: #4ecdc4; }
+    .header h1 {
+      font-size: 24px; font-weight: 700; letter-spacing: 3px;
+      color: #ddd; margin-bottom: 4px; text-align: center;
+    }
+    .header .sub { font-size: 13px; color: #555; text-align: center; }
+    .open-link {
+      display: inline-flex; align-items: center; gap: 4px;
+      color: #4ecdc4; text-decoration: none; font-size: 13px;
+      padding: 3px 10px; border: 1px solid #4ecdc444; border-radius: 6px;
+      transition: all 0.2s; margin-left: 4px; vertical-align: middle;
+    }
+    .open-link:hover {
+      background: #4ecdc411;
+      border-color: #4ecdc4;
+    }
+
+    .iframe-wrap {
+      width: 100%;
+      height: calc(100vh - var(--title-top) - 80px);
+      border: 1px solid #222;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .iframe-wrap iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .fallback {
+      display: none;
+      text-align: center;
+      padding: 40px 20px;
+      border: 1px solid #222;
+      border-radius: 10px;
+    }
+    .fallback p { color: #555; margin-bottom: 12px; font-size: 14px; }
+    .fallback a {
+      display: inline-block;
+      color: #4ecdc4; text-decoration: none;
+      padding: 10px 24px; border: 1px solid #4ecdc444; border-radius: 8px;
+      font-size: 15px; transition: all 0.2s;
+    }
+    .fallback a:hover { background: #4ecdc411; border-color: #4ecdc4; }
+
+    @media (max-width: 600px) {
+      body { padding: var(--title-top) 8px; }
+      .container { padding: 0 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="/">← 回到首页</a>
+    <div class="header">
+      <h1>🌪 台风观测</h1>
+      <div class="sub">中央气象台 · 实时台风路径 <a class="open-link" href="https://typhoon.weather.com.cn/gis/typhoon_full.shtml" target="_blank" rel="noopener">↗ 新窗口</a></div>
+    </div>
+
+    <div class="iframe-wrap" id="iframeWrap">
+      <iframe
+        src="https://typhoon.weather.com.cn/gis/typhoon_full.shtml"
+        title="台风观测"
+        allow="geolocation; clipboard-read; clipboard-write"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+        loading="lazy"
+        id="typhoonIframe"
+      ></iframe>
+    </div>
+
+    <div class="fallback" id="fallback">
+      <p>😵 页面加载失败，可能是目标站点限制了嵌入访问</p>
+      <a href="https://typhoon.weather.com.cn/gis/typhoon_full.shtml" target="_blank" rel="noopener">
+        点击打开台风观测页面 →
+      </a>
+    </div>
+  </div>
+
+  <script>
+    // 如果 iframe 加载失败，显示 fallback
+    const iframe = document.getElementById('typhoonIframe');
+    const fallback = document.getElementById('fallback');
+    const iframeWrap = document.getElementById('iframeWrap');
+
+    iframe.addEventListener('error', () => {
+      iframeWrap.style.display = 'none';
+      fallback.style.display = 'block';
+    });
+
+    // 设一个超时：10 秒后 iframe 还没内容就显示 fallback
+    let loaded = false;
+    iframe.addEventListener('load', () => { loaded = true; });
+    setTimeout(() => {
+      if (!loaded) {
+        try {
+          // 尝试访问 iframe 内容来判断是否空白 / 被拦截
+          const doc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (!doc || !doc.body || doc.body.innerHTML.trim() === '' || doc.body.innerHTML.includes('X-Frame-Options')) {
+            throw new Error('blocked');
+          }
+        } catch (e) {
+          iframeWrap.style.display = 'none';
+          fallback.style.display = 'block';
+        }
+      }
+    }, 10000);
+
+    // Tab 模式下隐藏返回链接
+    try {
+      if (window.top !== window.self) {
+        const bl = document.querySelector('.back-link');
+        if (bl) bl.style.display = 'none';
+      }
+    } catch (e) {}
+  </script>
+
+<script>fetch("/_log/log/visit",{method:"POST",body:JSON.stringify({tool:location.pathname.replace(/\/$/,"").split("/").pop()||"home"}),headers:{"Content-Type":"application/json"}})</script>
+</body>
+</html>
