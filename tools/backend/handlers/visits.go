@@ -22,7 +22,7 @@ type LogVisitRequest struct {
 	Tool string `json:"tool"`
 }
 
-// LogVisit records an IP + tool visit.
+// LogVisit records an IP + tool visit with dedup (1s window).
 // POST /api/visit
 func (h *VisitHandler) LogVisit(c *gin.Context) {
 	var req LogVisitRequest
@@ -37,6 +37,16 @@ func (h *VisitHandler) LogVisit(c *gin.Context) {
 		if req.IP == "" {
 			req.IP = c.ClientIP()
 		}
+	}
+
+	// 同一 IP + 工具 1 秒内去重
+	var recent int64
+	h.DB.Model(&models.Visit{}).
+		Where("ip = ? AND tool = ? AND visited_at > ?", req.IP, req.Tool, time.Now().Add(-1*time.Second)).
+		Count(&recent)
+	if recent > 0 {
+		c.JSON(http.StatusOK, gin.H{"message": "visit deduped"})
+		return
 	}
 
 	visit := models.Visit{
