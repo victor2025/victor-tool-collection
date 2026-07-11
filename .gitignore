@@ -1,5 +1,4 @@
 node_modules/
-# score-board 有构建流程，dist 由 build 生成
 /tools/score-board/dist/
 *.log
 .DS_Store
@@ -7,4 +6,5 @@ node_modules/
 .idea/
 data/
 tools/backend/backend
+tools/backend/victor-backend
 tools/backend/config.json
