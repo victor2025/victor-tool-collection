@@ -1,4 +1,4 @@
-const CACHE = 'vtc-v2';
+const CACHE = 'vtc-v3';
 const PRECACHE = [
   '/manifest.json',
   '/icon.svg',
@@ -26,6 +26,11 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   // 只缓存静态资源，HTML 页面不缓存（方便更新）
   if (url.pathname.match(/\.(js|css|png|jpg|svg|ico|woff2?)$/)) {
+    // tracker.js 内容频繁更新，不缓存
+    if (url.pathname === '/tracker.js') {
+      e.respondWith(fetch(e.request));
+      return;
+    }
     e.respondWith(
       caches.match(e.request).then(r => r || fetch(e.request))
     );
