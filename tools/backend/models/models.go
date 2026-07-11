@@ -7,6 +7,7 @@ type Visit struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	IP        string    `gorm:"size:64;not null;index" json:"ip"`
 	Tool      string    `gorm:"size:64;not null;index" json:"tool"`
+	UserAgent string    `gorm:"size:512;default:''" json:"user_agent"`
 	VisitedAt time.Time `gorm:"autoCreateTime;index" json:"visited_at"`
 }
 

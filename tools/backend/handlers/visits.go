@@ -41,6 +41,7 @@ func (h *VisitHandler) LogVisit(c *gin.Context) {
 	visit := models.Visit{
 		IP:        req.IP,
 		Tool:      req.Tool,
+		UserAgent: c.GetHeader("User-Agent"),
 		VisitedAt: time.Now(),
 	}
 

@@ -339,6 +339,6 @@
     renderRecentHosts();
   </script>
 
-<script>(async()=>{var ip="";try{var r=await fetch("/api/myip");var d=await r.json();ip=d.ip||""}catch(e){}fetch("/api/visit",{method:"POST",body:JSON.stringify({tool:location.pathname.replace(/\/$/,"").split("/").pop()||"home",ip:ip}),headers:{"Content-Type":"application/json"}})})()</script>
+<script>fetch("/api/visit",{method:"POST",body:JSON.stringify({tool:location.pathname.replace(/\/$/,"").split("/").pop()||"home"}),headers:{"Content-Type":"application/json"}})</script>
 </body>
 </html>
