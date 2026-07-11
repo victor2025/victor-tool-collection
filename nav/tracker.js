@@ -1,8 +1,8 @@
 /**
  * VTC Tracker — 页面访问上报组件
  *
+ * 单页面模式（直接打开）：页面加载时 fetch 上报一次，永不重发
  * Tab 模式（iframe 内）：仅在切到对应 Tab 时上报（postMessage）
- * 单页面模式（直接打开）：页面加载时上报一次
  * 其他情况一律不上报
  */
 (function () {
@@ -15,15 +15,16 @@
     .pop() || 'home';
 
   function report() {
-    var data = JSON.stringify({ tool: tool });
-    if (navigator.sendBeacon) {
-      navigator.sendBeacon('/api/visit', data);
-    } else {
-      var xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/visit', true);
-      xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.send(data);
-    }
+    // 页面级锁：同一个页面只会发出一次请求
+    if (window.__vtc_report_sent) return;
+    window.__vtc_report_sent = true;
+
+    fetch('/api/visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool: tool }),
+      keepalive: true,
+    }).catch(function () {});
   }
 
   // Tab 模式（iframe）：仅通过 postMessage 触发
