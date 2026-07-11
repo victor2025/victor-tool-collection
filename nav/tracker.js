@@ -31,23 +31,20 @@
     }
   }
 
-  // 非 iframe 场景（直接打开工具页面）：初始化时上报一次
   if (window.self === window.top) {
+    // 直接打开工具页面（非 iframe）：初始化时上报一次
     reportVisit();
+    // 同时监听浏览器标签页可见性变化（切回来时上报）
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) reportVisit();
+    });
+    window.addEventListener('focus', reportVisit);
+  } else {
+    // 在导航页 iframe 中：仅通过 postMessage 触发（由 nav 控制）
+    window.addEventListener('message', function (e) {
+      if (e.data && e.data.type === 'vtc_track_visit') {
+        reportVisit();
+      }
+    });
   }
-
-  // 来自导航页 Tab 切换的消息
-  window.addEventListener('message', function (e) {
-    if (e.data && e.data.type === 'vtc_track_visit') {
-      reportVisit();
-    }
-  });
-
-  // 浏览器标签页切换 / iframe 内点击获得焦点
-  window.addEventListener('focus', reportVisit);
-
-  // 浏览器标签页可见性变化
-  document.addEventListener('visibilitychange', function () {
-    if (!document.hidden) reportVisit();
-  });
 })();
