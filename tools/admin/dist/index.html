@@ -239,7 +239,7 @@
     // ===== 登录 =====
     async function doLogin() {
       const pwd = pwdInput.value;
-      const data = await apiPost("/_log/api/login", { password: pwd });
+      const data = await apiPost("/api/login", { password: pwd });
       if (data.ok) {
         authToken = data.token;
         localStorage.setItem("vtc_token", authToken);
@@ -279,7 +279,10 @@
 
     async function loadStats() {
       try {
-        const res = await fetch('/_log/stats?days=7&detail=1');
+        const token = localStorage.getItem("vtc_token");
+        const res = await fetch('/api/stats?ip_detail=1', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
         const data = await res.json();
         renderStats(data);
       } catch(e) {
@@ -288,20 +291,17 @@
     }
 
     function renderStats(data) {
-      // 统计数字
-      document.getElementById('statTotal').textContent = num(data.total);
-      document.getElementById('statRecent').textContent = num(data.recent_7d);
-      document.getElementById('statUnique').textContent = num(data.unique_ips);
-      document.getElementById('statAvg').textContent = num(Math.round(data.recent_7d / 7));
+      const toolList = Object.entries(data.per_tool || {}).map(([t, c]) => ({ tool: t, cnt: c })).sort((a,b) => b.cnt - a.cnt);
 
-      // 各工具排行
-      renderToolChart(data.tool_stats);
-      // 时段分布
-      renderHourlyChart(data.hourly);
-      // 趋势
-      renderTrendChart(data.tool_stats);
-      // IP 明细
-      renderIpDetail(data.ip_detail || {});
+      document.getElementById('statTotal').textContent = num(data.total);
+      document.getElementById('statRecent').textContent = num(data.total);
+      document.getElementById('statUnique').textContent = num(data.unique_ips);
+      document.getElementById('statAvg').textContent = num(Math.round(data.total / 7));
+
+      renderToolChart(toolList);
+      renderHourlyChart(data.hourly_distribution || {});
+      renderTrendChart(toolList);
+      renderIpDetail(data.ip_details || []);
     }
 
     function renderToolChart(toolStats) {
@@ -418,17 +418,16 @@
       });
     }
 
-    function renderIpDetail(ipDetail) {
+    function renderIpDetail(ipDetails) {
       const tbody = document.getElementById('ipBody');
-      const tools = Object.keys(ipDetail);
-      if (tools.length === 0) {
+      if (!ipDetails || ipDetails.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#444;padding:30px;">暂无数据</td></tr>';
         return;
       }
       let html = '';
-      tools.forEach(tool => {
-        (ipDetail[tool] || []).forEach(row => {
-          html += `<tr><td>${tool}</td><td>${row.ip}</td><td>${row.cnt}</td><td>${row.last_visit || '-'}</td></tr>`;
+      ipDetails.forEach(detail => {
+        Object.entries(detail.tool_count || {}).forEach(([tool, cnt]) => {
+          html += `<tr><td>${tool}</td><td>${detail.ip}</td><td>${cnt}</td><td>-</td></tr>`;
         });
       });
       tbody.innerHTML = html;
@@ -476,7 +475,7 @@
         return;
       }
 
-      const data = await apiPost("/_log/api/change-password", {
+      const data = await apiPost("/api/change-password", {
         token: authToken,
         old_password: old,
         new_password: nu
