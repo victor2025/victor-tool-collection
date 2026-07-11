@@ -812,17 +812,18 @@
       });
     }
 
+    // ===== 页面级抑制上报 =====
+    window.__vtc_suppress_track = true;
+    window.addEventListener('load', function () { window.__vtc_suppress_track = false; });
+
     function restoreTabs() {
       const saved = lsGet('vtc_tabs', null);
       if (!saved || !saved.slugs || !Array.isArray(saved.slugs)) return;
-      // 恢复阶段禁止上报访问（避免 iframe 加载时误报）
-      window.__vtc_suppress_track = true;
       saved.slugs.forEach(slug => {
         const tool = TOOLS.find(t => t.slug === slug);
         if (tool) openToolTab(tool);
       });
       switchTab('home');
-      window.__vtc_suppress_track = false;
       // 恢复后滚动到开头（首页 Tab）
       dom.tabBar.scrollLeft = 0;
     }
