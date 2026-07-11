@@ -648,21 +648,11 @@
       } else {
         const pane = dom.paneTool.querySelector(`#tool-pane-${tabId}`);
         if (pane) pane.classList.add('active');
-        // 通知 iframe 上报访问—仅当 iframe 已加载完毕才发消息
-        // （未加载的由 load 事件回调处理，且会检查 activeTabId）
-        const iframe = pane ? pane.querySelector('iframe') : null;
-        if (iframe && iframe.contentDocument) notifyVisit(tabId);
       }
     }
 
-    var _lastNotifiedTab = null;
-
     function notifyVisit(tabId) {
-      // 恢复阶段禁止上报
       if (window.__vtc_suppress_track) return;
-      // 同一 Tab 去重（防止 load 和 switchTab 同时触发）
-      if (_lastNotifiedTab === tabId) return;
-      _lastNotifiedTab = tabId;
       const iframe = document.querySelector(`#tool-pane-${tabId} iframe`);
       if (iframe && iframe.contentWindow) {
         try {
