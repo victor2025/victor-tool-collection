@@ -646,8 +646,10 @@
       } else {
         const pane = dom.paneTool.querySelector(`#tool-pane-${tabId}`);
         if (pane) pane.classList.add('active');
-        // 通知 iframe 上报访问（焦点切换触发）
-        notifyVisit(tabId);
+        // 通知 iframe 上报访问—仅当 iframe 已加载完毕才发消息
+        // （未加载的由 load 事件回调处理，且会检查 activeTabId）
+        const iframe = pane ? pane.querySelector('iframe') : null;
+        if (iframe && iframe.contentDocument) notifyVisit(tabId);
       }
     }
 
@@ -705,8 +707,8 @@
       iframe.src = tool.url;
       iframe.addEventListener('load', () => {
         hideIframeBackLinks(iframe);
-        // iframe 初次加载完成后上报
-        notifyVisit(tabId);
+        // 仅在仍为当前激活 Tab 时才上报（避免后台加载也计数）
+        if (activeTabId === tabId) notifyVisit(tabId);
       });
       pane.appendChild(iframe);
       dom.paneTool.appendChild(pane);
