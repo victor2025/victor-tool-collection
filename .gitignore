@@ -1,5 +1,6 @@
 node_modules/
 /tools/score-board/dist/
+/tools/url-encode/dist/
 *.log
 .DS_Store
 .vscode/
