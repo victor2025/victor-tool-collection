@@ -29,17 +29,23 @@ Gin + GORM 后端服务，提供访问记录、认证鉴权、统计查询功能
 | 端点 | 方法 | 鉴权 | 说明 |
 |------|------|------|------|
 | `/api/login` | POST | 无 | 登录，设置 `vtc_session` cookie |
+| `/api/logout` | POST | 无 | 退出，删除服务端 session |
 | `/api/check-session` | GET | Cookie | 验证 session 是否有效 |
-| `/api/visit` | POST | 无 | 记录访问（body: `{"tool":"..."}`） |
+| `/api/visit` | POST | 无 | 记录访问（body: `{"tool":"...", "device_id":"..."}`） |
 | `/api/change-password` | POST | Cookie | 修改密码 |
 | `/api/stats` | GET | Cookie | 访问统计 |
+| `/api/visits` | GET | Cookie | 分页访问记录（支持 `page`, `page_size`, `tool`, `show_label`） |
+| `/api/device-labels` | GET | Cookie | 列出所有设备标签 |
+| `/api/device-labels` | POST | Cookie | 创建/更新设备标签（body: `{"device_id":"...","label":"..."}`） |
+| `/api/device-labels/:device_id` | DELETE | Cookie | 删除设备标签 |
 | `/api/health` | GET | 无 | 健康检查 |
 
 ## 数据库表
 
-- **visits** — 访问记录（id, ip, tool, user_agent, visited_at）
+- **visits** — 访问记录（id, ip, tool, user_agent, device_id, visited_at）
 - **admins** — 管理员密码（id, password, created_at, updated_at）
 - **sessions** — 登录会话（id, token, created_at, expires_at）
+- **device_labels** — 设备标签（id, device_id, label, created_at, updated_at）
 
 ## 管理
 

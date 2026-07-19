@@ -71,6 +71,11 @@
     .stat-card .label {
       font-size: 12px; color: #555; margin-top: 4px; letter-spacing: 1px;
     }
+    .stat-card {
+      cursor: grab; user-select: none;
+    }
+    .stat-card:active { cursor: grabbing; }
+
 
     .chart-grid {
       display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
@@ -245,10 +250,14 @@
           <h3>📋 访问记录</h3>
           <div class="visit-filters">
             <select id="filterTool"><option value="">全部工具</option></select>
+            <input type="date" id="filterStartDate"/>
+            <span style="color:#333;font-size:12px">~</span>
+            <input type="date" id="filterEndDate"/>
+            <button class="btn" id="labelToggleBtn">🏷 标签模式</button>
             <button class="btn" id="visitSearchBtn">搜索</button>
           </div>
         </div>
-        <table><thead><tr><th>ID</th><th>IP</th><th>工具</th><th>UA</th><th>访问时间</th></tr></thead><tbody id="visitBody"></tbody></table>
+        <table><thead><tr><th>ID</th><th>IP</th><th>工具</th><th>UA</th><th>设备</th><th>访问时间</th></tr></thead><tbody id="visitBody"></tbody></table>
         <div class="pagination">
           <button class="btn" id="prevPageBtn">← 上一页</button>
           <span class="page-info" id="pageInfo"></span>
@@ -373,7 +382,7 @@
 
       renderToolChart(toolList);
       renderHourlyChart(data.hourly_distribution || {});
-      renderTrendChart(toolList);
+      renderTrendChart(data.daily_distribution || {});
       renderIpDetail(data.ip_details || []);
     }
 
@@ -453,24 +462,32 @@
       });
     }
 
-    function renderTrendChart() {
-      // 显示各工具近 7 天趋势 — 使用 mock 日分布
+    function renderTrendChart(dailyDist) {
       if (trendChart) trendChart.destroy();
-      const labels = [];
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date();
+      dailyDist = dailyDist || {};
+
+      // 生成近 7 天的标签和数据
+      var labels = [];
+      var values = [];
+      for (var i = 6; i >= 0; i--) {
+        var d = new Date();
         d.setDate(d.getDate() - i);
+        var y = d.getFullYear();
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        var key = y + '-' + m + '-' + day;
         labels.push((d.getMonth()+1) + '/' + d.getDate());
+        values.push(dailyDist[key] || 0);
       }
 
-      const ctx = document.getElementById('trendChart').getContext('2d');
+      var ctx = document.getElementById('trendChart').getContext('2d');
       trendChart = new Chart(ctx, {
         type: 'line',
         data: {
-          labels,
+          labels: labels,
           datasets: [{
             label: '访问量',
-            data: [0, 0, 0, 0, 0, 0, 0],
+            data: values,
             borderColor: '#ffd93d',
             backgroundColor: 'rgba(255, 217, 61, 0.1)',
             fill: true,
@@ -512,21 +529,108 @@
     let visitTotal = 0;
     let visitPageSize = 20;
     let visitFilterTool = "";
+    let showLabel = false;
+    let deviceLabels = {}; // device_id -> label
 
     const filterTool = document.getElementById('filterTool');
     const visitBody = document.getElementById('visitBody');
     const pageInfo = document.getElementById('pageInfo');
     const pageInput = document.getElementById('pageInput');
+    const labelToggleBtn = document.getElementById('labelToggleBtn');
+
+    // 加载设备标签
+    async function loadDeviceLabels() {
+      try {
+        const res = await fetch('/api/device-labels', creds);
+        const data = await res.json();
+        if (data.ok) {
+          deviceLabels = {};
+          (data.data || []).forEach(function(dl) {
+            deviceLabels[dl.device_id] = dl;
+          });
+        }
+      } catch(e) {
+        console.error('Failed to load device labels', e);
+      }
+    }
+
+    // 打标弹窗
+    function showLabelEditor(deviceId, currentLabel) {
+      var newLabel = prompt((currentLabel ? '修改标签' : '添加标签') + ' - ' + deviceId.substring(0,12) + '...', currentLabel || '');
+      if (newLabel === null) return; // cancelled
+      if (newLabel.trim() === '') {
+        // 删除标签
+        fetch('/api/device-labels/' + encodeURIComponent(deviceId), { method: 'DELETE', credentials: 'same-origin' })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.ok) {
+              delete deviceLabels[deviceId];
+              loadVisits();
+            }
+          });
+      } else {
+        fetch('/api/device-labels', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ device_id: deviceId, label: newLabel.trim() })
+        })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.ok) {
+              deviceLabels[deviceId] = d.data;
+              loadVisits();
+            }
+          });
+      }
+    }
+
+    // 标签模式切换
+    labelToggleBtn.addEventListener('click', function() {
+      showLabel = !showLabel;
+      labelToggleBtn.textContent = showLabel ? '🆔 显示 ID' : '🏷 标签模式';
+      loadVisits();
+    });
+
+    // 获取日期字符串 YYYY-MM-DD
+    function fmtDate(d) {
+      var y = d.getFullYear();
+      var m = String(d.getMonth() + 1).padStart(2, '0');
+      var day = String(d.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + day;
+    }
+
+    // 设置日期输入框默认值（近 7 天）
+    function setDefaultDateRange() {
+      var now = new Date();
+      var sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(now.getDate() - 7);
+      var elStart = document.getElementById('filterStartDate');
+      var elEnd = document.getElementById('filterEndDate');
+      if (!elStart.value) elStart.value = fmtDate(sevenDaysAgo);
+      if (!elEnd.value) elEnd.value = fmtDate(now);
+    }
 
     async function loadVisits() {
       try {
-        const res = await fetch(`/api/visits?page=${visitPage}&page_size=${visitPageSize}&tool=${encodeURIComponent(visitFilterTool)}`, creds);
+        await loadDeviceLabels();
+        var startDate = document.getElementById('filterStartDate').value;
+        var endDate = document.getElementById('filterEndDate').value;
+        var url = '/api/visits?page=' + visitPage + '&page_size=' + visitPageSize + '&tool=' + encodeURIComponent(visitFilterTool);
+        if (startDate) url += '&start_date=' + encodeURIComponent(startDate);
+        if (endDate) url += '&end_date=' + encodeURIComponent(endDate);
+        const res = await fetch(url, creds);
         const data = await res.json();
         if (!data.ok) return;
         renderVisits(data);
       } catch(e) {
         console.error('Failed to load visits', e);
       }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
     function renderVisits(data) {
@@ -545,53 +649,85 @@
 
       // Render table
       if (visits.length === 0) {
-        visitBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#444;padding:30px;">暂无数据</td></tr>';
+        visitBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#444;padding:30px;">暂无数据</td></tr>';
       } else {
-        let html = '';
-        visits.forEach(v => {
-          const t = new Date(v.visited_at);
-          const time = t.toLocaleString('zh-CN', { hour12: false });
-          const ua = v.user_agent ? v.user_agent.substring(0, 60) + (v.user_agent.length > 60 ? '...' : '') : '-';
-          html += `<tr><td>${v.id}</td><td>${v.ip}</td><td>${v.tool}</td><td style="font-size:11px;color:#666;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(v.user_agent || '').replace(/"/g, '&quot;')}">${ua}</td><td>${time}</td></tr>`;
+        var html = '';
+        visits.forEach(function(v) {
+          var t = new Date(v.visited_at);
+          var time = t.toLocaleString('zh-CN', { hour12: false });
+          var ua = v.user_agent ? v.user_agent.substring(0, 60) + (v.user_agent.length > 60 ? '...' : '') : '-';
+
+          // 设备列
+          var deviceCell = '';
+          var did = v.device_id || '';
+          var label = deviceLabels[did];
+          var labelName = label ? label.label : '';
+
+          if (showLabel && labelName) {
+            deviceCell = '<span style="color:#4ecdc4;cursor:pointer" title="' + escapeHtml(did) + '" onclick="showLabelEditor(\'' + escapeHtml(did) + '\',\'' + escapeHtml(labelName) + '\')">' + escapeHtml(labelName) + ' <span style="font-size:10px;color:#555">✎</span></span>';
+          } else if (showLabel && !labelName) {
+            deviceCell = '<span style="color:#666;cursor:pointer" title="点击添加标签" onclick="showLabelEditor(\'' + escapeHtml(did) + '\',\'\')">' + (did ? did.substring(0,12)+'…' : '-') + ' <span style="font-size:10px;color:#444">🏷</span></span>';
+          } else {
+            deviceCell = '<span style="cursor:pointer" onclick="showLabelEditor(\'' + escapeHtml(did) + '\',\'' + escapeHtml(labelName) + '\')" title="' + (labelName ? labelName : '点击添加标签') + '">' + (did ? did.substring(0,12)+'…' : '-') + '</span>';
+          }
+
+          html += '<tr><td>' + v.id + '</td><td>' + v.ip + '</td><td>' + v.tool + '</td><td style="font-size:11px;color:#666;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(v.user_agent || '') + '">' + ua + '</td><td>' + deviceCell + '</td><td>' + time + '</td></tr>';
         });
         visitBody.innerHTML = html;
       }
 
       // Pagination info
       const totalPages = Math.max(1, Math.ceil(visitTotal / visitPageSize));
-      pageInfo.textContent = `第 ${visitPage} / ${totalPages} 页（共 ${num(visitTotal)} 条）`;
+      pageInfo.textContent = '第 ' + visitPage + ' / ' + totalPages + ' 页（共 ' + num(visitTotal) + ' 条）';
       pageInput.value = visitPage;
       pageInput.max = totalPages;
     }
 
     // Pagination event listeners
-    document.getElementById('prevPageBtn').addEventListener('click', () => {
+    document.getElementById('prevPageBtn').addEventListener('click', function() {
       if (visitPage > 1) { visitPage--; loadVisits(); }
     });
-    document.getElementById('nextPageBtn').addEventListener('click', () => {
-      const totalPages = Math.max(1, Math.ceil(visitTotal / visitPageSize));
+    document.getElementById('nextPageBtn').addEventListener('click', function() {
+      var totalPages = Math.max(1, Math.ceil(visitTotal / visitPageSize));
       if (visitPage < totalPages) { visitPage++; loadVisits(); }
     });
-    document.getElementById('goPageBtn').addEventListener('click', () => {
-      const totalPages = Math.max(1, Math.ceil(visitTotal / visitPageSize));
-      const p = parseInt(pageInput.value);
+    document.getElementById('goPageBtn').addEventListener('click', function() {
+      var totalPages = Math.max(1, Math.ceil(visitTotal / visitPageSize));
+      var p = parseInt(pageInput.value);
       if (p >= 1 && p <= totalPages) {
         visitPage = p;
         loadVisits();
       }
     });
-    pageInput.addEventListener('keydown', (e) => {
+    pageInput.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') document.getElementById('goPageBtn').click();
     });
-    document.getElementById('visitSearchBtn').addEventListener('click', () => {
+    document.getElementById('visitSearchBtn').addEventListener('click', function() {
       visitFilterTool = filterTool.value;
       visitPage = 1;
       loadVisits();
     });
-    filterTool.addEventListener('change', () => {
+    // 日期变化自动重新搜索
+    document.getElementById('filterStartDate').addEventListener('change', function() {
+      visitPage = 1;
+      loadVisits();
+    });
+    document.getElementById('filterEndDate').addEventListener('change', function() {
+      visitPage = 1;
+      loadVisits();
+    });
+    filterTool.addEventListener('change', function() {
       visitFilterTool = filterTool.value;
       visitPage = 1;
       loadVisits();
+    });
+
+    // 日期输入框回车触发搜索
+    document.getElementById('filterStartDate').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') document.getElementById('visitSearchBtn').click();
+    });
+    document.getElementById('filterEndDate').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') document.getElementById('visitSearchBtn').click();
     });
 
     // ===== 修改密码 =====
@@ -603,6 +739,8 @@
 
     const el_refreshBtn=document.getElementById("refreshBtn");if(el_refreshBtn)el_refreshBtn.addEventListener("click", () => {
       loadStats();
+      visitPage = 1;
+      loadVisits();
     });
 
     const el_changePwdBtn=document.getElementById("changePwdBtn");if(el_changePwdBtn)el_changePwdBtn.addEventListener("click", () => {
@@ -658,6 +796,7 @@
       try {
         const data = await apiGet("/api/check-session");
         if (data.ok) {
+          setDefaultDateRange();
           showDashboard();
           return;
         }

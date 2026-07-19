@@ -22,8 +22,8 @@ func main() {
 		log.Fatalf("database.New: %v", err)
 	}
 
-	// Auto-migrate all models (including new Session)
-	if err := db.AutoMigrate(&models.Visit{}, &models.Admin{}, &models.Session{}); err != nil {
+	// Auto-migrate all models
+	if err := db.AutoMigrate(&models.Visit{}, &models.Admin{}, &models.Session{}, &models.DeviceLabel{}); err != nil {
 		log.Fatalf("AutoMigrate: %v", err)
 	}
 	log.Println("Migration completed")
@@ -38,6 +38,7 @@ func main() {
 
 	authHandler := &handlers.AuthHandler{DB: db}
 	visitHandler := &handlers.VisitHandler{DB: db}
+	deviceLabelHandler := &handlers.DeviceLabelHandler{DB: db}
 
 	// Public routes
 	router.POST("/api/login", authHandler.Login)
@@ -53,6 +54,9 @@ func main() {
 		protected.POST("/change-password", authHandler.ChangePassword)
 		protected.GET("/stats", visitHandler.GetStats)
 		protected.GET("/visits", visitHandler.GetVisits)
+		protected.GET("/device-labels", deviceLabelHandler.ListLabels)
+		protected.POST("/device-labels", deviceLabelHandler.UpsertLabel)
+		protected.DELETE("/device-labels/:device_id", deviceLabelHandler.DeleteLabel)
 	}
 
 	log.Printf("Listening on :%s", cfg.ServerPort)

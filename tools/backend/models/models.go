@@ -7,6 +7,7 @@ type Visit struct {
 	IP        string    `gorm:"size:64;not null;index" json:"ip"`
 	Tool      string    `gorm:"size:64;not null;index" json:"tool"`
 	UserAgent string    `gorm:"size:512;default:''" json:"user_agent"`
+	DeviceID  string    `gorm:"size:64;default:'';index" json:"device_id"`
 	VisitedAt time.Time `gorm:"autoCreateTime;index" json:"visited_at"`
 }
 
@@ -29,3 +30,14 @@ type Session struct {
 }
 
 func (Session) TableName() string { return "sessions" }
+
+// DeviceLabel stores human-readable labels for device identifiers.
+type DeviceLabel struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	DeviceID  string    `gorm:"size:64;not null;uniqueIndex" json:"device_id"`
+	Label     string    `gorm:"size:128;not null" json:"label"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+}
+
+func (DeviceLabel) TableName() string { return "device_labels" }

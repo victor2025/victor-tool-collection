@@ -75,7 +75,7 @@ victor-tool-collection/
 
 ```nginx
 location /my-tool {
-    sub_filter '</body>' '<script src="/tracker.js"></script></body>';
+    sub_filter '</body>' '<script src="/tracker.js?v=6"></script></body>';
     sub_filter_once off;
     ...
 }
@@ -116,9 +116,12 @@ Go 后端提供认证鉴权、访问统计、数据查询等功能。
 | `/api/login` | POST | 无 | 登录，设置 `vtc_session` cookie |
 | `/api/logout` | POST | 无 | 退出，删除服务端 session |
 | `/api/check-session` | GET | Cookie | 验证 session 是否有效 |
-| `/api/visit` | POST | 无 | 记录访问（body: `{"tool":"..."}`） |
+| `/api/visit` | POST | 无 | 记录访问（body: `{"tool":"...","device_id":"..."}`） |
 | `/api/stats` | GET | Cookie | 访问统计 |
-| `/api/visits` | GET | Cookie | 分页访问记录（支持 `page`, `page_size`, `tool` 参数） |
+| `/api/visits` | GET | Cookie | 分页访问记录（支持 `page`, `page_size`, `tool`, `show_label` 参数） |
+| `/api/device-labels` | GET | Cookie | 列出所有设备标签 |
+| `/api/device-labels` | POST | Cookie | 创建/更新设备标签（body: `{"device_id":"...","label":"..."}`） |
+| `/api/device-labels/:device_id` | DELETE | Cookie | 删除设备标签 |
 | `/api/change-password` | POST | Cookie | 修改管理员密码 |
 | `/api/health` | GET | 无 | 健康检查 |
 
@@ -126,9 +129,10 @@ Go 后端提供认证鉴权、访问统计、数据查询等功能。
 
 | 表名 | 说明 |
 |------|------|
-| `visits` | 访问记录（id, ip, tool, user_agent, visited_at） |
+| `visits` | 访问记录（id, ip, tool, user_agent, device_id, visited_at） |
 | `admins` | 管理员密码（id, password, created_at, updated_at） |
 | `sessions` | 登录会话（id, token, created_at, expires_at） |
+| `device_labels` | 设备标签（id, device_id, label, created_at, updated_at） |
 
 ### 服务管理
 

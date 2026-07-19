@@ -20,7 +20,7 @@
 | 🔐 **JWT 解码** | `/jwt-decoder/` | 纯静态 HTML/CSS/JS | 解析 JWT Header/Payload，识别注册声明，过期校验 |
 | 🖥 **WebShell 终端** | `/webshell/` | ttyd + webshell-wrapper + su/SSH | 本地终端输入系统密码 · SSH 连接使用 SSH 账密 |
 | ⏰ **时间戳转换** | `/timestamp/` | 纯静态 HTML/CSS/JS | Unix 时间戳 · 秒/毫秒 · 日期 ↔ 时间戳双向转换 |
-| 🔐 **管理后台** | `/admin/` | Chart.js + Go API | 密码登录 · 访问统计图表 · IP 明细 · 分页访问记录 |
+| 🔐 **管理后台** | `/admin/` | Chart.js + Go API | 密码登录 · 访问统计图表 · IP 明细 · 分页访问记录 · 设备标识跟踪 · 设备打标 |
 
 ### 娱乐工具集
 
@@ -87,7 +87,7 @@ victor-tool-collection/
 - **图表**: Chart.js 4（管理后台）
 - **纯静态工具**: 零依赖 HTML/CSS/JS
 - **终端服务**: ttyd（Web SSH 终端）
-- **访问跟踪**: 前端 tracker.js → Go API → PostgreSQL
+- **访问跟踪**: 前端 tracker.js（localStorage 设备标识 + 页面路径上报）→ Go API → PostgreSQL
 - **会话认证**: 服务端 session（DB 存储）+ cookie
 - **端口**: 8001（HTTP）- 8003（Go Backend API）
 
