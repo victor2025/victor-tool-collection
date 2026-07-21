@@ -93,7 +93,6 @@
       color: #ff6b6b;
     }
 
-
     textarea {
       width: 100%;
       min-height: 120px;
@@ -112,14 +111,15 @@
     textarea:focus { border-color: #4ecdc4; }
     textarea::placeholder { color: #444; }
 
-    /* 普通按钮行 */
-    .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+    /* 按钮行 */
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
     .btn {
       padding: 8px 16px;
       border: 1px solid #333; border-radius: 7px;
       background: linear-gradient(180deg, #222 0%, #1a1a1a 100%);
       color: #ccc; font-size: 13px; font-weight: 600;
       cursor: pointer; transition: all 0.15s; text-align: center;
+      white-space: nowrap;
     }
     .btn:hover { transform: translateY(-1px); }
     .btn-primary { color: #4ecdc4; border-color: #4ecdc4; }
@@ -127,6 +127,42 @@
       background: linear-gradient(180deg, #1a3a36 0%, #142a26 100%);
       box-shadow: 0 0 12px rgba(78,205,196,0.2);
     }
+
+    /* 无 Padding 切换开关 */
+    .toggle-wrap {
+      display: inline-flex; align-items: center; gap: 6px;
+      cursor: pointer; user-select: none;
+      font-size: 12px; color: #555;
+      transition: color 0.15s;
+    }
+    .toggle-wrap:hover { color: #aaa; }
+    .toggle-wrap input { display: none; }
+    .toggle-track {
+      width: 34px; height: 18px;
+      border-radius: 10px;
+      background: #222;
+      border: 1px solid #333;
+      position: relative;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: #555;
+      top: 1px; left: 1px;
+      transition: all 0.2s;
+    }
+    .toggle-wrap input:checked + .toggle-track {
+      background: #1a3a36;
+      border-color: #4ecdc4;
+    }
+    .toggle-wrap input:checked + .toggle-track::after {
+      background: #4ecdc4;
+      left: 17px;
+    }
+    .toggle-label { font-size: 12px; color: inherit; }
 
     /* 图片上传 */
     .upload-zone {
@@ -189,7 +225,7 @@
     <a href="/" class="back-link">← 返回工具集</a>
     <div class="header">
       <h1>🔣 Base64 编解码</h1>
-      <div class="sub">文本 · 图片 · 互转</div>
+      <div class="sub">文本 · 图片 · 互转 · 支持无 Padding / URL-safe</div>
     </div>
 
     <div class="tabs">
@@ -213,6 +249,16 @@
         </div>
         <textarea id="plainText" placeholder="输入原文…" spellcheck="false" oninput="onPlainInput()"></textarea>
         <div class="btn-row">
+          <label class="toggle-wrap" title="编码不添加末尾的 = 填充">
+            <input type="checkbox" id="noPadChk" />
+            <span class="toggle-track"></span>
+            <span class="toggle-label">无 Padding</span>
+          </label>
+          <label class="toggle-wrap" title="用 - 替代 +，用 _ 替代 /，适合 URL 使用">
+            <input type="checkbox" id="urlSafeChk" />
+            <span class="toggle-track"></span>
+            <span class="toggle-label">URL-safe</span>
+          </label>
           <button class="btn btn-primary" onclick="encodeText()">⬇ 编码为 Base64</button>
         </div>
       </div>
@@ -312,12 +358,44 @@
       $('panel' + (name === 'text' ? 'Text' : 'Img')).classList.add('active')
     }
 
-    function toB64(str) {
-      try { const b = new TextEncoder().encode(str); let s=''; for(const x of b) s+=String.fromCharCode(x); return btoa(s) } catch{return ''}
+    // ---------- 核心 Base64 工具函数 ----------
+
+    /** 对字符串做 UTF-8 → Base64 编码 */
+    function encodeBase64(str, noPad, urlSafe) {
+      try {
+        const bytes = new TextEncoder().encode(str)
+        let bin = ''
+        for (const b of bytes) bin += String.fromCharCode(b)
+        let result = btoa(bin)
+        if (urlSafe) {
+          result = result.replace(/\+/g, '-').replace(/\//g, '_')
+        }
+        if (noPad) result = result.replace(/=+$/, '')
+        return result
+      } catch {
+        return ''
+      }
     }
-    function fromB64(str) {
-      try { const b = atob(str.trim()); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return new TextDecoder().decode(u) } catch{return null}
+
+    /** 解码 Base64 → UTF-8 字符串。自动补齐 padding，自动识别 URL-safe */
+    function decodeBase64(str) {
+      try {
+        let s = str.trim()
+        // 自动识别 URL-safe 字符并还原
+        s = s.replace(/-/g, '+').replace(/_/g, '/')
+        // 自动补齐 padding
+        const pad = s.length % 4
+        if (pad === 1) return null  // 长度 mod 4 = 1 必非法
+        if (pad > 1) s += '='.repeat(4 - pad)
+        const bin = atob(s)
+        const bytes = new Uint8Array(bin.length)
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+        return new TextDecoder().decode(bytes)
+      } catch {
+        return null
+      }
     }
+
     function isImgUrl(s) { return /^data:image\//i.test(s.trim()) }
 
     function showToast(msg) {
@@ -358,12 +436,20 @@
 
     function encodeText() {
       const v=$('plainText').value; if(!v){showToast('⚠️ 请输入原文');return}
-      $('b64Text').value=toB64(v); $('b64Cnt').textContent=$('b64Text').value.length; onB64Input()
+      const noPad = $('noPadChk').checked
+      const urlSafe = $('urlSafeChk').checked
+      $('b64Text').value=encodeBase64(v, noPad, urlSafe)
+      $('b64Cnt').textContent=$('b64Text').value.length; onB64Input()
+      let hint = '✅ 已编码'
+      if (noPad && urlSafe) hint += '（无 Padding + URL-safe = RawURLEncoding）'
+      else if (noPad) hint += '（无 Padding）'
+      else if (urlSafe) hint += '（URL-safe）'
+      showToast(hint)
     }
     function decodeText() {
       let v=$('b64Text').value.trim(); if(!v){showToast('⚠️ 请输入 Base64');return}
       if(isImgUrl(v)) v=v.split(',')[1]
-      const r=fromB64(v)
+      const r=decodeBase64(v)
       if(r===null){showToast('⚠️ Base64 格式不正确');return}
       $('plainText').value=r; $('plainCnt').textContent=r.length
     }
