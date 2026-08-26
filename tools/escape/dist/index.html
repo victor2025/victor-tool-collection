@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>转义/反转义</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --container-width: 860px; --title-top: 30px; }
+    body {
+      min-height: 100vh;
+      background: #000;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: var(--title-top) 20px;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.015) 0%, transparent 60%),
+        #000;
+    }
+    .container { max-width: var(--container-width); margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 24px; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: #555; text-decoration: none; font-size: 13px;
+      margin-bottom: 16px; transition: color 0.2s;
+    }
+    .back-link:hover { color: #4ecdc4; }
+    .header h1 {
+      font-size: 24px; font-weight: 700; letter-spacing: 3px;
+      color: #ddd; margin-bottom: 4px;
+    }
+    .header .sub { font-size: 13px; color: #555; }
+
+    .card {
+      background: linear-gradient(135deg, #111 0%, #151515 100%);
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 18px 18px 14px;
+      margin-bottom: 14px;
+    }
+
+    .editor-label {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .editor-label .left {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .editor-label .left .name {
+      font-size: 13px; font-weight: 600; color: #888; letter-spacing: 1px;
+    }
+    .editor-label .left .count {
+      font-size: 11px; color: #444;
+    }
+    .editor-label .right {
+      display: flex; align-items: center; gap: 4px;
+    }
+    .editor-label .right .act {
+      padding: 2px 6px;
+      color: #555;
+      font-size: 12px;
+      cursor: pointer;
+      transition: color 0.12s;
+      user-select: none;
+    }
+    .editor-label .right .act:hover {
+      color: #4ecdc4;
+    }
+    .editor-label .right .act.clear:hover {
+      color: #ff6b6b;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid #2a2a2a;
+      background: #0d0d0d;
+      color: #e0e0e0;
+      font-family: 'SF Mono', 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    textarea:focus { border-color: #4ecdc4; }
+    textarea::placeholder { color: #444; }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid #333; border-radius: 7px;
+      background: linear-gradient(180deg, #222 0%, #1a1a1a 100%);
+      color: #ccc; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; text-align: center;
+      font-family: inherit;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { color: #4ecdc4; border-color: #4ecdc4; }
+    .btn-primary:hover {
+      background: linear-gradient(180deg, #1a3a36 0%, #142a26 100%);
+      box-shadow: 0 0 12px rgba(78,205,196,0.2);
+    }
+    .btn-secondary { color: #ffd93d; border-color: #ffd93d; }
+    .btn-secondary:hover {
+      background: linear-gradient(180deg, #2a281a 0%, #1a1a0a 100%);
+      box-shadow: 0 0 12px rgba(255,217,61,0.2);
+    }
+
+    /* 格式选择 */
+    .options-row {
+      display: flex; align-items: center; gap: 14px;
+      margin: 10px 0 0; flex-wrap: wrap;
+    }
+    .opt-group {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: #666;
+    }
+    .opt-group label { cursor: pointer; user-select: none; }
+    .opt-group input[type="checkbox"] {
+      accent-color: #4ecdc4;
+      width: 14px; height: 14px; cursor: pointer;
+    }
+    .opt-tip {
+      font-size: 11px; color: #444; margin-left: 4px;
+    }
+
+    .fmt-select {
+      background: #0d0d0d; border: 1px solid #2a2a2a; border-radius: 7px;
+      color: #ccc; font-size: 13px; padding: 7px 12px;
+      outline: none; cursor: pointer; font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .fmt-select:focus { border-color: #4ecdc4; }
+    .fmt-select option { background: #151515; }
+
+    .toast {
+      position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #222; color: #ccc; padding: 10px 24px; border-radius: 8px;
+      border: 1px solid #333; font-size: 13px;
+      opacity: 0; transition: all 0.3s ease; pointer-events: none; z-index: 100;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 600px) {
+      body { padding: var(--title-top) 12px; }
+      .card { padding: 14px 12px; }
+      textarea { min-height: 110px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">← 返回工具集</a>
+    <div class="header">
+      <h1>🔤 转义 / 反转义</h1>
+      <div class="sub">HTML 实体 · JavaScript 字符串 · JSON 特殊字符</div>
+    </div>
+
+    <!-- ===== 原文 ===== -->
+    <div class="card">
+      <div class="editor-label">
+        <div class="left">
+          <span class="name">📝 原文</span>
+          <span class="count" id="plainCnt">0</span>
+        </div>
+        <div class="right">
+          <span class="act clear" onclick="clearPlain()">清空</span>
+          <span class="act" onclick="copyPlain()">复制</span>
+        </div>
+      </div>
+      <textarea id="plainText" placeholder="输入含特殊字符的原文…" spellcheck="false" oninput="onPlainInput()"></textarea>
+      <div class="options-row">
+        <div class="opt-group">
+          <label>格式</label>
+          <select class="fmt-select" id="fmtSelect" onchange="onFmtChange()">
+            <option value="html">HTML 实体 (&amp; &lt; &gt; …)</option>
+            <option value="js">JavaScript 字符串 (\n \t \" \u…) </option>
+            <option value="json">JSON 字符串 (\n \t \" \u…) </option>
+          </select>
+        </div>
+        <div class="opt-group" id="unicodeOpt">
+          <input type="checkbox" id="unicodeAll"/>
+          <label for="unicodeAll">非 ASCII 转义为 \uXXXX</label>
+          <span class="opt-tip">(中文/emoji 等)</span>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="escapeText()">⬇ 转义</button>
+      </div>
+    </div>
+
+    <!-- ===== 转义结果 ===== -->
+    <div class="card">
+      <div class="editor-label">
+        <div class="left">
+          <span class="name">🎯 转义结果</span>
+          <span class="count" id="escCnt">0</span>
+        </div>
+        <div class="right">
+          <span class="act clear" onclick="clearEsc()">清空</span>
+          <span class="act" onclick="copyEsc()">复制</span>
+        </div>
+      </div>
+      <textarea id="escText" placeholder="转义后的字符串…" spellcheck="false" oninput="onEscInput()"></textarea>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="unescapeText()">⬆ 反转义</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const $ = id => document.getElementById(id)
+
+    function showToast(msg) {
+      const el = $('toast'); el.textContent = msg; el.classList.add('show')
+      clearTimeout(window._tt); window._tt = setTimeout(() => el.classList.remove('show'), 2500)
+    }
+
+    function copyText(text, taId) {
+      if (!text) { showToast('⚠️ 没有内容'); return }
+      if (navigator.clipboard && location.protocol === 'https:') {
+        navigator.clipboard.writeText(text).then(() => showToast('已复制')).catch(() => fallbackCopy(text, taId))
+      } else {
+        fallbackCopy(text, taId)
+      }
+    }
+    function fallbackCopy(text, taId) {
+      const ta = taId ? $(taId) : document.createElement('textarea')
+      if (!taId) {
+        ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px'
+        document.body.appendChild(ta)
+      }
+      ta.select(); ta.setSelectionRange(0, 999999)
+      try { document.execCommand('copy'); showToast('已复制') } catch { showToast('⚠️ 复制失败，请手动选择复制') }
+      if (!taId) document.body.removeChild(ta)
+    }
+
+    function getFmt() { return $('fmtSelect').value }
+
+    // ===== 计数 =====
+    function onPlainInput() { $('plainCnt').textContent = $('plainText').value.length }
+    function onEscInput() { $('escCnt').textContent = $('escText').value.length }
+    function onFmtChange() {
+      // HTML 模式下 unicode 选项无意义，隐藏
+      $('unicodeOpt').style.display = getFmt() === 'html' ? 'none' : ''
+    }
+
+    // ===== HTML 实体 =====
+    const HTML_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, ch => HTML_MAP[ch])
+    }
+    function unescapeHtml(str) {
+      const ta = document.createElement('textarea')
+      ta.innerHTML = str
+      return ta.value
+    }
+
+    // ===== JavaScript 转义 =====
+    function escapeJs(str, unicodeAll) {
+      let out = ''
+      for (const ch of str) {
+        const code = ch.codePointAt(0)
+        if (code >= 0x20 && code <= 0x7e) {
+          if (ch === '\\') out += '\\\\'
+          else if (ch === "'") out += "\\'"
+          else if (ch === '"') out += '\\"'
+          else out += ch
+        } else if (ch === '\n') out += '\\n'
+        else if (ch === '\r') out += '\\r'
+        else if (ch === '\t') out += '\\t'
+        else if (ch === '\b') out += '\\b'
+        else if (ch === '\f') out += '\\f'
+        else if (ch === '\v') out += '\\v'
+        else if (code === 0) out += '\\0'
+        else if (code < 0x20 || unicodeAll) {
+          if (code > 0xffff) out += '\\u{' + code.toString(16).toUpperCase() + '}'
+          else out += '\\u' + code.toString(16).toUpperCase().padStart(4, '0')
+        } else out += ch
+      }
+      return out
+    }
+
+    // ===== JSON 转义（基于 JSON.stringify，保证合法 JSON） =====
+    function escapeJson(str, unicodeAll) {
+      let s = JSON.stringify(str).slice(1, -1)
+      if (unicodeAll) {
+        s = s.replace(/[^\x00-\x7f]/g, ch => {
+          const cp = ch.codePointAt(0)
+          if (cp <= 0xffff) return '\\u' + cp.toString(16).toUpperCase().padStart(4, '0')
+          const hi = Math.floor((cp - 0x10000) / 0x400) + 0xd800
+          const lo = ((cp - 0x10000) % 0x400) + 0xdc00
+          return '\\u' + hi.toString(16).toUpperCase().padStart(4, '0') +
+                 '\\u' + lo.toString(16).toUpperCase().padStart(4, '0')
+        })
+      }
+      return s
+    }
+
+    // ===== 反转义（JS/JSON 通用，安全解析反斜杠序列） =====
+    function unescapeJs(str) {
+      let out = ''
+      for (let i = 0; i < str.length; i++) {
+        const c = str[i]
+        if (c !== '\\') { out += c; continue }
+        const n = str[++i]
+        if (n === undefined) { out += '\\'; break }
+        switch (n) {
+          case 'n': out += '\n'; break
+          case 'r': out += '\r'; break
+          case 't': out += '\t'; break
+          case 'b': out += '\b'; break
+          case 'f': out += '\f'; break
+          case 'v': out += '\v'; break
+          case '0': out += '\0'; break
+          case '\\': out += '\\'; break
+          case "'": out += "'"; break
+          case '"': out += '"'; break
+          case 'x': {
+            const hex = str.substr(i + 1, 2)
+            if (/^[0-9a-fA-F]{2}$/.test(hex)) { out += String.fromCharCode(parseInt(hex, 16)); i += 2 }
+            else out += '\\x'
+            break
+          }
+          case 'u': {
+            if (str[i + 1] === '{') {
+              const end = str.indexOf('}', i + 2)
+              if (end > -1) {
+                const hex = str.slice(i + 2, end)
+                if (/^[0-9a-fA-F]{1,6}$/.test(hex)) { out += String.fromCodePoint(parseInt(hex, 16)); i = end }
+                else out += '\\u{'
+              } else out += '\\u{'
+            } else {
+              const hex = str.substr(i + 1, 4)
+              if (/^[0-9a-fA-F]{4}$/.test(hex)) { out += String.fromCharCode(parseInt(hex, 16)); i += 4 }
+              else out += '\\u'
+            }
+            break
+          }
+          default: out += n
+        }
+      }
+      return out
+    }
+
+    // ===== 操作 =====
+    function escapeText() {
+      const v = $('plainText').value
+      if (!v) { showToast('⚠️ 请输入原文'); return }
+      const unicodeAll = $('unicodeAll').checked
+      let r = ''
+      switch (getFmt()) {
+        case 'html': r = escapeHtml(v); break
+        case 'js':   r = escapeJs(v, unicodeAll); break
+        case 'json': r = escapeJson(v, unicodeAll); break
+      }
+      $('escText').value = r
+      $('escCnt').textContent = r.length
+    }
+
+    function unescapeText() {
+      const v = $('escText').value
+      if (!v) { showToast('⚠️ 请输入转义字符串'); return }
+      try {
+        const r = getFmt() === 'html' ? unescapeHtml(v) : unescapeJs(v)
+        $('plainText').value = r
+        $('plainCnt').textContent = r.length
+      } catch (e) {
+        showToast('⚠️ 反转义失败：' + (e && e.message ? e.message : '内容格式不正确'))
+      }
+    }
+
+    function copyPlain() { copyText($('plainText').value, 'plainText') }
+    function clearPlain() { $('plainText').value = ''; $('plainCnt').textContent = '0' }
+    function copyEsc() { copyText($('escText').value, 'escText') }
+    function clearEsc() { $('escText').value = ''; $('escCnt').textContent = '0' }
+
+    // 初始化
+    onFmtChange()
+  </script>
+
+<script>fetch("/api/visit",{method:"POST",body:JSON.stringify({tool:location.pathname.replace(/\/$/,"").split("/").pop()||"home"}),headers:{"Content-Type":"application/json"}})</script>
+</body>
+</html>

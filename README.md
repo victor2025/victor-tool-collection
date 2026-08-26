@@ -20,6 +20,8 @@
 | 🔐 **JWT 解码** | `/jwt-decoder/` | 纯静态 HTML/CSS/JS | 解析 JWT Header/Payload，识别注册声明，过期校验 |
 | 🖥 **WebShell 终端** | `/webshell/` | ttyd + webshell-wrapper + su/SSH | 本地终端输入系统密码 · SSH 连接使用 SSH 账密 |
 | ⏰ **时间戳转换** | `/timestamp/` | 纯静态 HTML/CSS/JS | Unix 时间戳 · 秒/毫秒 · 日期 ↔ 时间戳双向转换 |
+| 🔬 **正则表达式** | `/regex/` | 纯静态 HTML/CSS/JS | 实时正则匹配 · 高亮显示 · 语法参考 |
+| 🔤 **转义/反转义** | `/escape/` | 纯静态 HTML/CSS/JS | HTML 实体 · JS/JSON 字符串特殊字符双向转义，支持 \uXXXX |
 | 🔐 **管理后台** | `/admin/` | Chart.js + Go API | 密码登录 · 访问统计图表 · IP 明细 · 分页访问记录 · 设备标识跟踪 · 设备打标 |
 
 ### 娱乐工具集
@@ -51,9 +53,11 @@ victor-tool-collection/
 │   ├── admin/               # 管理后台（访问统计仪表盘）
 │   ├── backend/             # Go 后端服务（Gin + GORM）
 │   ├── base64/              # Base64 编解码工具
+│   ├── escape/              # 转义/反转义工具（HTML/JS/JSON）
 │   ├── jwt-decoder/         # JWT 解码工具
 │   ├── json-formatter/      # JSON 格式化工具
 │   ├── qrcode/              # 二维码工具
+│   ├── regex/               # 正则表达式测试工具
 │   ├── score-board/         # 记分板（React）
 │   ├── timestamp/           # 时间戳转换工具
 │   ├── typhoon/             # 台风观测工具
