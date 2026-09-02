@@ -217,13 +217,16 @@
         <label class="toggle-label">
           <input type="checkbox" id="unescapeCheck"> 反转义嵌套 JSON
         </label>
+        <label class="toggle-label">
+          <input type="checkbox" id="sortCheck"> 按键排序（字典序）
+        </label>
         <span class="depth-control">
           层数
           <button class="depth-btn" id="depthDec" onclick="depthChange(-1)" disabled>−</button>
           <span class="depth-val" id="depthVal">1</span>
           <button class="depth-btn" id="depthInc" onclick="depthChange(1)">+</button>
         </span>
-        <button class="btn" onclick="copyResult()">📋 复制结果</button>
+        <button class="btn" id="copyResultBtn" onclick="copyResult()">📋 复制结果</button>
         <button class="btn btn-danger" onclick="clearAll()">✕ 清空</button>
       </div>
 
@@ -268,7 +271,7 @@
       <div class="toolbar">
         <span class="title">操作</span>
         <button class="btn btn-primary" onclick="doEscape()">▸ 转义为字符串</button>
-        <button class="btn" onclick="copyEscapeResult()">📋 复制结果</button>
+        <button class="btn" id="copyEscapeResultBtn" onclick="copyEscapeResult()">📋 复制结果</button>
         <button class="btn btn-danger" onclick="clearEscape()">✕ 清空</button>
       </div>
 
@@ -328,6 +331,7 @@
     const $charCount = document.getElementById('charCount');
     const $sizeInfo = document.getElementById('sizeInfo');
     const $unescapeCheck = document.getElementById('unescapeCheck');
+    const $sortCheck = document.getElementById('sortCheck');
     const $depthVal = document.getElementById('depthVal');
     let depthValue = 1;
     function depthChange(delta) {
@@ -511,6 +515,103 @@
     }
 
     // ================================================================
+    // Key sorting: parse token stream into a tree, sort object keys
+    // recursively, then serialize back to tokens (preserves raw values)
+    // ================================================================
+    function parseNode(tokens, i) {
+      const tok = tokens[i];
+      if (tok && tok.type === 'bracket') {
+        if (tok.value === '{') {
+          const items = [];
+          let j = i + 1;
+          if (tokens[j] && tokens[j].type === 'bracket' && tokens[j].value === '}') {
+            return { node: { type: 'obj', items: [] }, next: j + 1 };
+          }
+          while (j < tokens.length && !(tokens[j].type === 'bracket' && tokens[j].value === '}')) {
+            const keyTok = tokens[j];
+            j++;
+            if (tokens[j] && tokens[j].type === 'punct' && tokens[j].value === ':') j++;
+            const { node, next } = parseNode(tokens, j);
+            items.push({ key: keyTok, node });
+            j = next;
+            if (tokens[j] && tokens[j].type === 'punct' && tokens[j].value === ',') j++;
+          }
+          return { node: { type: 'obj', items }, next: j + 1 };
+        }
+        if (tok.value === '[') {
+          const items = [];
+          let j = i + 1;
+          if (tokens[j] && tokens[j].type === 'bracket' && tokens[j].value === ']') {
+            return { node: { type: 'arr', items: [] }, next: j + 1 };
+          }
+          while (j < tokens.length && !(tokens[j].type === 'bracket' && tokens[j].value === ']')) {
+            const { node, next } = parseNode(tokens, j);
+            items.push(node);
+            j = next;
+            if (tokens[j] && tokens[j].type === 'punct' && tokens[j].value === ',') j++;
+          }
+          return { node: { type: 'arr', items }, next: j + 1 };
+        }
+      }
+      return { node: { type: 'leaf', token: tok }, next: i + 1 };
+    }
+
+    function sortNode(node) {
+      if (node.type === 'obj') {
+        for (const item of node.items) sortNode(item.node);
+        node.items.sort((a, b) => {
+          const ka = keyCompareValue(a.key);
+          const kb = keyCompareValue(b.key);
+          return ka < kb ? -1 : ka > kb ? 1 : 0;
+        });
+      } else if (node.type === 'arr') {
+        for (const item of node.items) sortNode(item);
+      }
+    }
+
+    function keyCompareValue(tok) {
+      if (tok && tok.type === 'string') {
+        return unescapeContent(tok.value.slice(1, -1));
+      }
+      return tok ? tok.value : '';
+    }
+
+    function serializeNode(node, out) {
+      if (node.type === 'leaf') { out.push(node.token); return; }
+      if (node.type === 'obj') {
+        out.push({ type: 'bracket', value: '{' });
+        node.items.forEach((item, idx) => {
+          if (idx > 0) out.push({ type: 'punct', value: ',' });
+          out.push(item.key);
+          out.push({ type: 'punct', value: ':' });
+          serializeNode(item.node, out);
+        });
+        out.push({ type: 'bracket', value: '}' });
+      } else {
+        out.push({ type: 'bracket', value: '[' });
+        node.items.forEach((item, idx) => {
+          if (idx > 0) out.push({ type: 'punct', value: ',' });
+          serializeNode(item, out);
+        });
+        out.push({ type: 'bracket', value: ']' });
+      }
+    }
+
+    // Sort object keys at every level; returns original tokens if parse fails
+    function sortTokens(tokens) {
+      try {
+        const { node, next } = parseNode(tokens, 0);
+        if (next !== tokens.length) return tokens;
+        sortNode(node);
+        const out = [];
+        serializeNode(node, out);
+        return out;
+      } catch (e) {
+        return tokens;
+      }
+    }
+
+    // ================================================================
     // Syntax highlighting
     // ================================================================
     function highlightSyntax(json) {
@@ -562,9 +663,10 @@
       if ($unescapeCheck.checked) {
         try {
           const depth = depthValue;
-          const tokens = tokenize(raw);
-          const unescaped = unescapeTokens(tokens, depth);
-          resultStr = prettyPrint(unescaped);
+          let tokens = tokenize(raw);
+          tokens = unescapeTokens(tokens, depth);
+          if ($sortCheck.checked) tokens = sortTokens(tokens);
+          resultStr = prettyPrint(tokens);
           // Validate by parsing - if parse fails, show warning
           try {
             JSON.parse(resultStr);
@@ -582,7 +684,9 @@
       } else {
         // Pure text formatting (no parse needed)
         try {
-          resultStr = formatJSON(raw);
+          let tokens = tokenize(raw);
+          if ($sortCheck.checked) tokens = sortTokens(tokens);
+          resultStr = prettyPrint(tokens);
         } catch (e) {
           $output.textContent = '❌ 格式化失败：' + e.message;
           $output.className = 'output error';
@@ -607,7 +711,7 @@
       const text = $output.textContent;
       if (!text || text === '请先输入 JSON' || text === '等待输入…') return;
       navigator.clipboard.writeText(text).then(() => {
-        const btn = document.querySelector('#tab-format .btn:nth-child(4)');
+        const btn = document.getElementById('copyResultBtn');
         const orig = btn.textContent;
         btn.textContent = '✓ 已复制';
         setTimeout(() => btn.textContent = orig, 1500);
@@ -713,7 +817,7 @@
       const text = $escapeOutput.textContent;
       if (!text || text === '请先输入 JSON' || text === '等待输入…') return;
       navigator.clipboard.writeText(text).then(() => {
-        const btn = document.querySelector('#tab-escape .btn:nth-child(2)');
+        const btn = document.getElementById('copyEscapeResultBtn');
         const orig = btn.textContent;
         btn.textContent = '✓ 已复制';
         setTimeout(() => btn.textContent = orig, 1500);
