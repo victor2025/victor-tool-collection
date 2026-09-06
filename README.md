@@ -22,6 +22,7 @@
 | ⏰ **时间戳转换** | `/timestamp/` | 纯静态 HTML/CSS/JS | Unix 时间戳 · 秒/毫秒 · 日期 ↔ 时间戳双向转换 |
 | 🔬 **正则表达式** | `/regex/` | 纯静态 HTML/CSS/JS | 实时正则匹配 · 高亮显示 · 语法参考 |
 | 🔤 **转义/反转义** | `/escape/` | 纯静态 HTML/CSS/JS | HTML 实体 · JS/JSON 字符串特殊字符双向转义，支持 \uXXXX |
+| 🖼 **图片混淆** | `/image-obfuscator/` | 纯静态 HTML/CSS/JS | Gilbert 空间填充曲线像素可逆置乱 · 混淆/解混淆 · 本地处理不上传 |
 | 🔐 **管理后台** | `/admin/` | Chart.js + Go API | 密码登录 · 访问统计图表 · IP 明细 · 分页访问记录 · 设备标识跟踪 · 设备打标 |
 
 ### 娱乐工具集
@@ -56,6 +57,7 @@ victor-tool-collection/
 │   ├── escape/              # 转义/反转义工具（HTML/JS/JSON）
 │   ├── jwt-decoder/         # JWT 解码工具
 │   ├── json-formatter/      # JSON 格式化工具
+│   ├── image-obfuscator/    # 图片混淆工具（Gilbert 曲线）
 │   ├── qrcode/              # 二维码工具
 │   ├── regex/               # 正则表达式测试工具
 │   ├── score-board/         # 记分板（React）

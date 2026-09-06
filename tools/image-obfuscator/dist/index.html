@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>图片混淆</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --title-top: 30px; --container-width: 980px; }
+    body {
+      min-height: 100vh;
+      background: #000;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: var(--title-top) 20px;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.015) 0%, transparent 60%),
+        #000;
+    }
+    /* 右上角：独立页面打开 */
+    .open-standalone {
+      position: fixed; top: 10px; right: 14px; z-index: 999;
+      padding: 5px 12px; font-size: 12px; color: #888;
+      border: 1px solid #2a2a2a; border-radius: 6px;
+      background: linear-gradient(180deg, #1a1a1a 0%, #141414 100%);
+      text-decoration: none; user-select: none;
+      transition: all 0.15s;
+    }
+    .open-standalone:hover { color: #4ecdc4; border-color: #4ecdc4; }
+    .container { max-width: var(--container-width); margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 24px; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: #555; text-decoration: none; font-size: 13px;
+      margin-bottom: 16px; transition: color 0.2s;
+    }
+    .back-link:hover { color: #4ecdc4; }
+    .header h1 { font-size: 24px; font-weight: 700; letter-spacing: 3px; color: #ddd; margin-bottom: 4px; }
+    .header .sub { font-size: 13px; color: #555; }
+
+    .card {
+      background: linear-gradient(135deg, #111 0%, #151515 100%);
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 14px;
+    }
+
+    /* 上传区 */
+    #drop {
+      border: 2px dashed #333;
+      border-radius: 10px;
+      padding: 26px 16px;
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #0a0a0a;
+      user-select: none;
+    }
+    #drop:hover, #drop.over { border-color: #4ecdc4; color: #aaa; background: #0d0f0f; }
+    #drop .big { font-size: 26px; display: block; margin-bottom: 6px; }
+    #ipt { display: none; }
+
+    /* 参数行 */
+    .params {
+      display: flex; flex-wrap: wrap; gap: 18px; align-items: center;
+      margin-top: 14px; font-size: 13px; color: #888;
+    }
+    .params label { display: inline-flex; align-items: center; gap: 8px; }
+    .params select, .params input[type=number] {
+      background: #0d0d0d; color: #e0e0e0;
+      border: 1px solid #2a2a2a; border-radius: 6px;
+      padding: 5px 8px; font-size: 13px; outline: none;
+    }
+    .params select:focus, .params input:focus { border-color: #4ecdc4; }
+    .params .hint { color: #555; font-size: 12px; }
+
+    /* 按钮行 */
+    .btn-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid #333; border-radius: 7px;
+      background: linear-gradient(180deg, #222 0%, #1a1a1a 100%);
+      color: #ccc; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; user-select: none;
+    }
+    .btn:hover:not(:disabled) { border-color: #4ecdc4; color: #4ecdc4; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn.primary { background: linear-gradient(180deg, #173f3a 0%, #102b28 100%); border-color: #22665e; color: #4ecdc4; }
+    .btn.primary:hover:not(:disabled) { border-color: #4ecdc4; color: #7fe0d8; }
+    .btn.danger { background: linear-gradient(180deg, #3f1717 0%, #2b1010 100%); border-color: #662222; color: #e07a7a; }
+    .btn.danger:hover:not(:disabled) { border-color: #ff6b6b; color: #ff9a9a; }
+
+    .status { margin-top: 10px; font-size: 12px; color: #666; min-height: 16px; }
+    .status.err { color: #ff6b6b; }
+
+    /* 双栏预览 */
+    .panes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 6px; }
+    @media (max-width: 760px) { .panes { grid-template-columns: 1fr; } }
+    .pane { min-width: 0; }
+    .pane-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+    }
+    .pane-header .left { display: flex; align-items: center; gap: 8px; }
+    .pane-header .left .name { font-size: 13px; font-weight: 600; color: #888; letter-spacing: 1px; }
+    .pane-header .left .meta { font-size: 11px; color: #444; }
+    .pane-header .right { display: flex; align-items: center; gap: 4px; }
+    .pane-header .right .act {
+      padding: 2px 6px; color: #555; font-size: 12px; cursor: pointer;
+      transition: color 0.12s; user-select: none; border: none; background: none;
+    }
+    .pane-header .right .act:hover { color: #4ecdc4; }
+    .imgbox {
+      background: #0a0a0a; border: 1px solid #222; border-radius: 10px;
+      min-height: 180px; display: flex; align-items: center; justify-content: center;
+      overflow: hidden; padding: 8px;
+    }
+    .imgbox img {
+      max-width: 100%; max-height: 420px; display: block; border-radius: 4px;
+    }
+    .imgbox .ph { color: #333; font-size: 13px; }
+
+    /* 原理说明 */
+    details { margin-top: 4px; }
+    details summary {
+      cursor: pointer; color: #888; font-size: 13px; font-weight: 600;
+      padding: 6px 0; user-select: none; letter-spacing: 1px;
+    }
+    details summary:hover { color: #4ecdc4; }
+    details .doc { color: #777; font-size: 13px; line-height: 1.9; padding: 6px 2px 2px; }
+    details .doc b { color: #aaa; }
+    details .doc code {
+      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 4px;
+      padding: 1px 6px; font-size: 12px; color: #4ecdc4;
+    }
+    .warn { margin-top: 10px; font-size: 12px; color: #8a7a3a; }
+  </style>
+</head>
+<body>
+<a class="open-standalone" id="openStandalone" href="/image-obfuscator/" target="_blank" rel="noopener" title="在新窗口打开本工具">⧉ 在新窗口打开</a>
+<div class="container">
+  <div class="header">
+    <a class="back-link" href="/" onclick="try{parent.document.querySelectorAll('.tab')[0]&&parent.document.querySelectorAll('.tab')[0].click()}catch(e){}">← 返回首页</a>
+    <h1>🖼 图片混淆</h1>
+    <div class="sub">Gilbert 空间填充曲线 · 像素可逆置乱 · 本地处理不上传</div>
+  </div>
+
+  <div class="card">
+    <div id="drop">
+      <span class="big">📁</span>
+      点击选择或拖拽图片到此处
+      <input type="file" id="ipt" accept="image/*"/>
+    </div>
+
+    <div class="params">
+      <label>混淆轮数
+        <input type="number" id="rounds" value="1" min="1" max="10" step="1" style="width:58px"/>
+      </label>
+      <label>输出格式
+        <select id="fmt">
+          <option value="png">PNG（无损，可完美还原）</option>
+          <option value="jpeg">JPEG（体积小，压缩后仍保色）</option>
+        </select>
+      </label>
+      <span class="hint">轮数 ≥ 2 时混淆/解混淆必须使用相同轮数</span>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn primary" id="btnEnc" disabled>🔀 混淆</button>
+      <button class="btn primary" id="btnDec" disabled>🔁 解混淆</button>
+      <button class="btn" id="btnOrig" disabled>↩ 还原原图</button>
+      <button class="btn" id="btnDl" disabled>⬇ 下载当前</button>
+      <button class="btn danger" id="btnClear">✕ 清空</button>
+    </div>
+    <div class="status" id="status">请选择一张图片开始</div>
+  </div>
+
+  <div class="card">
+    <div class="panes">
+      <div class="pane">
+        <div class="pane-header">
+          <span class="left"><span class="name">原图参照</span><span class="meta" id="metaCur"></span></span>
+          <span class="right"></span>
+        </div>
+        <div class="imgbox" id="boxCur"><span class="ph">暂无图片</span></div>
+      </div>
+      <div class="pane">
+        <div class="pane-header">
+          <span class="left"><span class="name">处理结果</span><span class="meta" id="metaOut"></span></span>
+          <span class="right"></span>
+        </div>
+        <div class="imgbox" id="boxOut"><span class="ph">点击「混淆」或「解混淆」生成</span></div>
+      </div>
+    </div>
+    <div class="warn">⚠ 仅供技术交流与娱乐：该混淆不是安全加密，知道算法与轮数即可还原。混淆图请勿上传涉密内容。</div>
+  </div>
+
+  <div class="card">
+    <details>
+      <summary>🔬 工作原理</summary>
+      <div class="doc">
+        <p>本工具使用 <b>Gilbert 空间填充曲线</b>（广义 Hilbert 曲线，支持任意宽高）把整张图片的像素排成一条一维路径：<code>gilbert2d(width, height)</code> 返回覆盖每个像素恰好一次的坐标序列，路径上相邻的像素在二维空间中也相邻。</p>
+        <br/>
+        <p><b>混淆</b>：沿曲线把整串像素<b>循环平移</b>一个偏移量——偏移取黄金分割比例：<code>offset = round((√5 − 1) / 2 × W × H)</code>。像素从曲线位置 <code>i</code> 搬到 <code>(i + offset) mod N</code>，视觉上变成均匀噪点图。</p>
+        <br/>
+        <p><b>解混淆</b>：沿同一曲线反向平移一次即可无损还原（PNG 输出下像素级完美恢复）。</p>
+        <br/>
+        <p><b>为什么用空间填充曲线而不是随机打乱？</b> 随机打乱会破坏像素间的空间相关性，混淆图一旦经过 JPEG 压缩或缩略图处理就严重失真；而 Gilbert 曲线平移<b>保留了局部邻域结构</b>，混淆图仍然高度可压缩、缩略图也稳定，还原效果更好——这也是「混淆图被压缩仍能保持色彩」的原因。混淆轮数 ≥ 2 时等效于多次平移，增强置乱程度。</p>
+        <br/>
+        <p>纯浏览器本地处理，图片不会上传到任何服务器。</p>
+      </div>
+    </details>
+  </div>
+</div>
+
+<script>
+// ============ Gilbert 空间填充曲线（广义 Hilbert）============
+// 生成覆盖 width×height 每个像素一次的一维路径，直接写线性索引，无中间对象
+function buildGilbertLin(width, height) {
+  const N = width * height;
+  const lin = new Int32Array(N);
+  let idx = 0;
+  if (width >= height) gen(0, 0, width, 0, 0, height);
+  else gen(0, 0, 0, height, width, 0);
+  function gen(x, y, ax, ay, bx, by) {
+    const w = Math.abs(ax + ay), h = Math.abs(bx + by);
+    const dax = Math.sign(ax) | 0, day = Math.sign(ay) | 0, dbx = Math.sign(bx) | 0, dby = Math.sign(by) | 0;
+    if (h === 1) {
+      for (let i = 0; i < w; i++) { lin[idx++] = y * width + x; x += dax; y += day; }
+      return;
+    }
+    if (w === 1) {
+      for (let i = 0; i < h; i++) { lin[idx++] = y * width + x; x += dbx; y += dby; }
+      return;
+    }
+    let ax2 = (ax / 2) | 0, ay2 = (ay / 2) | 0;
+    let bx2 = (bx / 2) | 0, by2 = (by / 2) | 0;
+    const w2 = Math.abs(ax2 + ay2), h2 = Math.abs(bx2 + by2);
+    if (2 * w > 3 * h) {
+      if ((w2 & 1) && (w > 2)) { ax2 += dax; ay2 += day; }
+      gen(x, y, ax2, ay2, bx, by);
+      gen(x + ax2, y + ay2, ax - ax2, ay - ay2, bx, by);
+    } else {
+      if ((h2 & 1) && (h > 2)) { bx2 += dbx; by2 += dby; }
+      gen(x, y, bx2, by2, ax2, ay2);
+      gen(x + bx2, y + by2, ax, ay, bx - bx2, by - by2);
+      gen(x + (ax - dax) + (bx2 - dbx), y + (ay - day) + (by2 - dby), -bx2, -by2, -(ax - ax2), -(ay - ay2));
+    }
+  }
+  return lin;
+}
+
+// 沿曲线平移像素：reverse=false 混淆（前移 offset），reverse=true 解混淆（后移 offset）
+// 多轮：循环应用 rounds 次
+function shufflePixels(data, width, height, offset, reverse, rounds) {
+  const N = width * height;
+  const lin = buildGilbertLin(width, height);
+  const in32 = new Uint32Array(data.buffer, data.byteOffset, N);
+  let cur = in32;
+  for (let r = 0; r < rounds; r++) {
+    const out32 = new Uint32Array(N);
+    if (!reverse) {
+      for (let k = 0; k < N; k++) out32[lin[(k + offset) % N]] = cur[lin[k]];
+    } else {
+      for (let k = 0; k < N; k++) out32[lin[k]] = cur[lin[(k + offset) % N]];
+    }
+    cur = out32;
+  }
+  return new Uint8ClampedArray(cur.buffer, 0, N * 4).slice();
+}
+
+// ============ Worker（防大图卡 UI）============
+const WORKER_SRC = `
+function buildGilbertLin(width, height) {
+  const N = width * height;
+  const lin = new Int32Array(N);
+  let idx = 0;
+  if (width >= height) gen(0, 0, width, 0, 0, height); else gen(0, 0, 0, height, width, 0);
+  function gen(x, y, ax, ay, bx, by) {
+    const w = Math.abs(ax + ay), h = Math.abs(bx + by);
+    const dax = Math.sign(ax)|0, day = Math.sign(ay)|0, dbx = Math.sign(bx)|0, dby = Math.sign(by)|0;
+    if (h === 1) { for (let i = 0; i < w; i++) { lin[idx++] = y*width + x; x += dax; y += day; } return; }
+    if (w === 1) { for (let i = 0; i < h; i++) { lin[idx++] = y*width + x; x += dbx; y += dby; } return; }
+    let ax2 = (ax/2)|0, ay2 = (ay/2)|0, bx2 = (bx/2)|0, by2 = (by/2)|0;
+    const w2 = Math.abs(ax2+ay2), h2 = Math.abs(bx2+by2);
+    if (2*w > 3*h) {
+      if ((w2 & 1) && (w > 2)) { ax2 += dax; ay2 += day; }
+      gen(x, y, ax2, ay2, bx, by);
+      gen(x + ax2, y + ay2, ax - ax2, ay - ay2, bx, by);
+    } else {
+      if ((h2 & 1) && (h > 2)) { bx2 += dbx; by2 += dby; }
+      gen(x, y, bx2, by2, ax2, ay2);
+      gen(x + bx2, y + by2, ax, ay, bx - bx2, by - by2);
+      gen(x + (ax-dax) + (bx2-dbx), y + (ay-day) + (by2-dby), -bx2, -by2, -(ax-ax2), -(ay-ay2));
+    }
+  }
+  return lin;
+}
+self.onmessage = function(e) {
+  const { data, width, height, offset, reverse, rounds, id } = e.data;
+  try {
+    const N = width * height;
+    const lin = buildGilbertLin(width, height);
+    const in32 = new Uint32Array(data.buffer, data.byteOffset, N);
+    let cur = in32;
+    for (let r = 0; r < rounds; r++) {
+      const out32 = new Uint32Array(N);
+      if (!reverse) { for (let k = 0; k < N; k++) out32[lin[(k+offset)%N]] = cur[lin[k]]; }
+      else { for (let k = 0; k < N; k++) out32[lin[k]] = cur[lin[(k+offset)%N]]; }
+      cur = out32;
+    }
+    const out = new Uint8ClampedArray(cur.buffer, 0, N*4).slice();
+    self.postMessage({ ok: true, id, buf: out.buffer }, [out.buffer]);
+  } catch (err) {
+    self.postMessage({ ok: false, id, error: String(err && err.message || err) });
+  }
+};
+`;
+
+// 仅在 iframe（导航页 Tab 模式）内展示「在新窗口打开」；独立页面直接访问时隐藏
+(function () {
+  const btn = document.getElementById('openStandalone');
+  if (btn && window.self === window.top) btn.style.display = 'none';
+})();
+
+// ============ 状态 ============
+const $ = id => document.getElementById(id);
+let originalBlob = null;   // 原始文件（左栏参照）
+let curBlob = null;        // 当前处理链上的图（右栏，混淆/解混淆作用于它）
+let busy = false;
+let worker = null;
+
+const drop = $('drop'), ipt = $('ipt');
+const boxCur = $('boxCur'), boxOut = $('boxOut');
+const metaCur = $('metaCur'), metaOut = $('metaOut');
+const statusEl = $('status');
+
+function setStatus(t, isErr) {
+  statusEl.textContent = t;
+  statusEl.className = 'status' + (isErr ? ' err' : '');
+}
+function fmtBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(2) + ' MB';
+}
+function renderImg(box, metaEl, blob) {
+  box.innerHTML = '';
+  const img = document.createElement('img');
+  img.src = URL.createObjectURL(blob);
+  box.appendChild(img);
+  if (metaEl) metaEl.textContent = (blob.type.split('/')[1] || '').toUpperCase() + ' · ' + fmtBytes(blob.size);
+}
+
+// 更新右栏（处理链当前节点）
+function showCur(blob) {
+  curBlob = blob;
+  renderImg(boxOut, metaOut, blob);
+}
+
+// ============ Worker ============
+function getWorker() {
+  if (worker) return worker;
+  const blob = new Blob([WORKER_SRC], { type: 'application/javascript' });
+  const url = URL.createObjectURL(blob);
+  worker = new Worker(url);
+  return worker;
+}
+function runShuffle(imgData, width, height, reverse, rounds) {
+  return new Promise((resolve, reject) => {
+    const w = getWorker();
+    const id = Math.random().toString(36).slice(2);
+    const handler = e => {
+      if (e.data.id !== id) return;
+      w.removeEventListener('message', handler);
+      if (e.data.ok) resolve(new Uint8ClampedArray(e.data.buf));
+      else reject(new Error(e.data.error));
+    };
+    w.addEventListener('message', handler);
+    const N = width * height;
+    const offset = Math.round((Math.sqrt(5) - 1) / 2 * N);
+    w.postMessage({ id, data: imgData.data, width, height, offset, reverse, rounds }, [imgData.data.buffer]);
+  });
+}
+
+// 把图片 blob 转 canvas → ImageData 处理 → 输出新 blob
+async function processImage(blob, reverse, rounds, fmt) {
+  const bmp = await createImageBitmap(blob);
+  const w = bmp.width, h = bmp.height;
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(bmp, 0, 0);
+  bmp.close();
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const t0 = performance.now();
+  const outData = await runShuffle(imgData, w, h, reverse, rounds);
+  const ms = Math.round(performance.now() - t0);
+  ctx.putImageData(new ImageData(outData, w, h), 0, 0);
+  const mime = fmt === 'jpeg' ? 'image/jpeg' : 'image/png';
+  const outBlob = await new Promise(res => canvas.toBlob(res, mime, fmt === 'jpeg' ? 0.95 : undefined));
+  return { blob: outBlob, ms, w, h };
+}
+
+// ============ 事件 ============
+drop.addEventListener('click', () => ipt.click());
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', e => {
+  e.preventDefault(); drop.classList.remove('over');
+  if (e.dataTransfer.files && e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+ipt.addEventListener('change', () => { if (ipt.files[0]) loadFile(ipt.files[0]); });
+
+function loadFile(file) {
+  if (!file.type.startsWith('image/')) { setStatus('请选择图片文件', true); return; }
+  originalBlob = file;
+  renderImg(boxCur, metaCur, file);
+  showCur(file);
+  $('btnEnc').disabled = $('btnDec').disabled = $('btnOrig').disabled = $('btnDl').disabled = false;
+  setStatus('已加载：' + (file.name || 'image') + '（' + fmtBytes(file.size) + '），点击「混淆」开始');
+}
+
+$('btnClear').addEventListener('click', () => {
+  if (busy) return;
+  ipt.value = '';
+  originalBlob = null; curBlob = null;
+  boxCur.innerHTML = '<span class="ph">暂无图片</span>';
+  boxOut.innerHTML = '<span class="ph">点击「混淆」或「解混淆」生成</span>';
+  $('metaCur').textContent = ''; $('metaOut').textContent = '';
+  $('btnEnc').disabled = $('btnDec').disabled = $('btnOrig').disabled = $('btnDl').disabled = true;
+  setStatus('请选择一张图片开始');
+});
+
+async function doProcess(reverse, label) {
+  if (busy || !curBlob) return;
+  const rounds = Math.max(1, Math.min(10, parseInt($('rounds').value, 10) || 1));
+  const fmt = $('fmt').value;
+  busy = true;
+  $('btnEnc').disabled = $('btnDec').disabled = $('btnOrig').disabled = $('btnDl').disabled = true;
+  setStatus('⏳ ' + label + '中（轮数 ' + rounds + '）… 大图可能需要几秒');
+  try {
+    const { blob, ms, w, h } = await processImage(curBlob, reverse, rounds, fmt);
+    showCur(blob);
+    setStatus('✅ ' + label + '完成：' + w + '×' + h + '，耗时 ' + ms + ' ms，' + fmtBytes(blob.size));
+  } catch (err) {
+    console.error(err);
+    setStatus('❌ 处理失败：' + err.message, true);
+  } finally {
+    busy = false;
+    $('btnEnc').disabled = $('btnDec').disabled = $('btnOrig').disabled = $('btnDl').disabled = !curBlob;
+  }
+}
+$('btnEnc').addEventListener('click', () => doProcess(false, '混淆'));
+$('btnDec').addEventListener('click', () => doProcess(true, '解混淆'));
+$('btnOrig').addEventListener('click', () => {
+  if (busy || !originalBlob) return;
+  showCur(originalBlob);
+  setStatus('已还原到原始图片');
+});
+$('btnDl').addEventListener('click', () => {
+  if (!curBlob) return;
+  const a = document.createElement('a');
+  const ext = curBlob.type === 'image/png' ? 'png' : 'jpg';
+  a.href = URL.createObjectURL(curBlob);
+  a.download = 'image-obfuscated-' + Date.now() + '.' + ext;
+  a.click();
+});
+</script>
+</body>
+</html>
