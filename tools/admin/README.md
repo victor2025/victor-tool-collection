@@ -10,7 +10,10 @@
 - **时段分布** — 24 小时折线图，观察访问高峰时段
 - **IP 明细** — 每个工具下各 IP 的访问次数
 - **分页访问记录** — 支持工具筛选、页码跳转
-- **设备标识** — 记录并展示浏览器设备唯一标识（localStorage UUID）
+- **服务器监控 Tab** — 左侧 Tab 栏切换「访问统计 / 服务器监控」
+  - 实时显示 CPU 使用率、内存、磁盘、温度、电压、频率、负载、运行时长
+  - **每秒自动刷新**（数据源 `/api/system`）
+  - 供电/降频/欠压状态提示（vcgencmd get_throttled）
 - **设备打标** — 点击设备标识可添加/修改/删除标签
 - **标签模式切换** — 在显示 device_id 和显示标签之间切换
 
@@ -18,7 +21,7 @@
 
 - 纯 HTML + CSS + JavaScript
 - [Chart.js 4.4](https://www.chartjs.org/)（通过 CDN 加载）
-- 数据来源：`/api/stats`（统计）、`/api/visits`（访问记录）、`/api/device-labels`（设备标签）
+- 数据来源：`/api/stats`（统计）、`/api/visits`（访问记录）、`/api/device-labels`（设备标签）、`/api/system`（服务器监控）
 - 无构建步骤
 
 ## 访问方式

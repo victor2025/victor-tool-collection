@@ -39,6 +39,7 @@ func main() {
 	authHandler := &handlers.AuthHandler{DB: db}
 	visitHandler := &handlers.VisitHandler{DB: db}
 	deviceLabelHandler := &handlers.DeviceLabelHandler{DB: db}
+	systemHandler := &handlers.SystemHandler{}
 
 	// Public routes
 	router.POST("/api/login", authHandler.Login)
@@ -57,6 +58,7 @@ func main() {
 		protected.GET("/device-labels", deviceLabelHandler.ListLabels)
 		protected.POST("/device-labels", deviceLabelHandler.UpsertLabel)
 		protected.DELETE("/device-labels/:device_id", deviceLabelHandler.DeleteLabel)
+		protected.GET("/system", systemHandler.GetSystem)
 	}
 
 	log.Printf("Listening on :%s", cfg.ServerPort)

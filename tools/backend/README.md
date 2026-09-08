@@ -38,6 +38,7 @@ Gin + GORM 后端服务，提供访问记录、认证鉴权、统计查询功能
 | `/api/device-labels` | GET | Cookie | 列出所有设备标签 |
 | `/api/device-labels` | POST | Cookie | 创建/更新设备标签（body: `{"device_id":"...","label":"..."}`） |
 | `/api/device-labels/:device_id` | DELETE | Cookie | 删除设备标签 |
+| `/api/system` | GET | Cookie | 服务器实时状态（CPU/内存/温度/电压/频率/负载/磁盘/运行时长，树莓派 vcgencmd） |
 | `/api/health` | GET | 无 | 健康检查 |
 
 ## 数据库表

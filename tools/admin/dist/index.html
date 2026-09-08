@@ -192,6 +192,68 @@
     .modal .modal-msg.ok { color: #4ecdc4; }
     .modal .modal-msg.err { color: #ff6b6b; }
 
+    /* ===== 左侧 Tab 布局 ===== */
+    .dash-layout { display: flex; gap: 14px; align-items: flex-start; }
+    .side-tabs {
+      width: 138px; flex: none; display: flex; flex-direction: column; gap: 6px;
+      position: sticky; top: 10px;
+    }
+    .side-tab {
+      padding: 11px 12px; border-radius: 8px;
+      border: 1px solid #222; background: #111;
+      color: #888; font-size: 13px; cursor: pointer; text-align: left;
+      font-family: inherit; transition: all 0.15s; user-select: none;
+      line-height: 1.4;
+    }
+    .side-tab:hover { border-color: #4ecdc4; color: #aaa; }
+    .side-tab.active {
+      background: linear-gradient(180deg, #173f3a 0%, #102b28 100%);
+      color: #4ecdc4; border-color: #22665e; font-weight: 600;
+    }
+    .tab-content { flex: 1; min-width: 0; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ===== 服务器监控面板 ===== */
+    .sys-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+      margin-bottom: 16px;
+    }
+    .sys-card {
+      background: #111; border: 1px solid #222; border-radius: 10px;
+      padding: 14px 14px 12px;
+    }
+    .sys-card .sys-label { font-size: 12px; color: #777; letter-spacing: 1px; margin-bottom: 8px; }
+    .sys-card .sys-big { font-size: 24px; font-weight: 700; color: #4ecdc4; font-variant-numeric: tabular-nums; }
+    .sys-card .sys-big.warn { color: #ffd93d; }
+    .sys-card .sys-big.hot { color: #ff6b6b; }
+    .sys-card .sys-meta { font-size: 11px; color: #555; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .meter {
+      height: 5px; border-radius: 3px; background: #222; overflow: hidden; margin-top: 8px;
+    }
+    .meter-bar {
+      height: 100%; width: 0%; border-radius: 3px;
+      background: linear-gradient(90deg, #4ecdc4, #2aa79e);
+      transition: width 0.6s ease;
+    }
+    .meter-bar.warn { background: linear-gradient(90deg, #ffd93d, #f0b400); }
+    .meter-bar.hot { background: linear-gradient(90deg, #ff6b6b, #e04040); }
+    .sys-status {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 12px; color: #555; margin-bottom: 10px;
+    }
+    .sys-status .live { color: #4ecdc4; }
+    .sys-note {
+      background: #0d1212; border: 1px solid #1a2626; border-radius: 8px;
+      padding: 8px 12px; font-size: 12px; color: #5a7a76; margin-top: 4px;
+    }
+
+    @media (max-width: 720px) {
+      .dash-layout { flex-direction: column; }
+      .side-tabs { width: 100%; flex-direction: row; overflow-x: auto; position: static; }
+      .side-tab { flex: 1; text-align: center; white-space: nowrap; }
+      .sys-grid { grid-template-columns: repeat(2, 1fr); }
+    }
     @media (max-width: 600px) {
       .stats-row { grid-template-columns: repeat(2, 1fr); }
       .chart-grid { grid-template-columns: 1fr; }
@@ -217,7 +279,7 @@
     <!-- ===== 仪表盘 ===== -->
     <div id="dashboard">
       <div class="header">
-        <h1>📊 访问统计</h1>
+        <h1 id="dashTitle">📊 访问统计</h1>
         <div class="sub" id="statsPeriod">最近 7 天</div>
       </div>
 
@@ -226,6 +288,17 @@
         <button class="btn" id="changePwdBtn">🔑 修改密码</button>
         <button class="btn danger" id="logoutBtn">🚪 退出</button>
       </div>
+
+      <div class="dash-layout">
+        <aside class="side-tabs">
+          <button class="side-tab active" data-tab="stats">📊 访问统计</button>
+          <button class="side-tab" data-tab="sys">🖥 服务器监控</button>
+        </aside>
+        <div class="tab-content">
+
+          <!-- ===== 面板：访问统计 ===== -->
+          <section class="tab-panel active" id="panel-stats">
+
 
       <div class="stats-row" id="statsRow">
         <div class="stat-card"><div class="num" id="statTotal">-</div><div class="label">总访问</div></div>
@@ -266,6 +339,69 @@
             <button class="btn" id="goPageBtn">跳转</button>
           </div>
           <button class="btn" id="nextPageBtn">下一页 →</button>
+        </div>
+      </div>
+          </section>
+
+          <!-- ===== 面板：服务器监控 ===== -->
+          <section class="tab-panel" id="panel-sys">
+            <div class="sys-status">
+              <span class="live">● 实时监控 · 每秒刷新</span>
+              <span id="sysClock">--</span>
+            </div>
+            <div class="sys-grid">
+              <div class="sys-card">
+                <div class="sys-label">🧠 CPU 使用率</div>
+                <div class="sys-big" id="sysCpu">--%</div>
+                <div class="meter"><div class="meter-bar" id="sysCpuBar"></div></div>
+                <div class="sys-meta" id="sysCpuMeta">-- 核</div>
+              </div>
+              <div class="sys-card">
+                <div class="sys-label">💾 内存</div>
+                <div class="sys-big" id="sysMem">--%</div>
+                <div class="meter"><div class="meter-bar" id="sysMemBar"></div></div>
+                <div class="sys-meta" id="sysMemMeta">-- / -- GB</div>
+              </div>
+              <div class="sys-card">
+                <div class="sys-label">💽 磁盘 /</div>
+                <div class="sys-big" id="sysDisk">--%</div>
+                <div class="meter"><div class="meter-bar" id="sysDiskBar"></div></div>
+                <div class="sys-meta" id="sysDiskMeta">-- / -- GB</div>
+              </div>
+              <div class="sys-card">
+                <div class="sys-label">🌡 CPU 温度</div>
+                <div class="sys-big" id="sysTemp">--°C</div>
+                <div class="meter"><div class="meter-bar" id="sysTempBar"></div></div>
+                <div class="sys-meta" id="sysTempMeta">--</div>
+              </div>
+              <div class="sys-card">
+                <div class="sys-label">⚡ 电压</div>
+                <div class="sys-big" id="sysVolt">--V</div>
+                <div class="meter"><div class="meter-bar" id="sysVoltBar"></div></div>
+                <div class="sys-meta" id="sysVoltMeta">--</div>
+              </div>
+              <div class="sys-card">
+                <div class="sys-label">📟 频率</div>
+                <div class="sys-big" id="sysFreq">--MHz</div>
+                <div class="meter"><div class="meter-bar" id="sysFreqBar"></div></div>
+                <div class="sys-meta" id="sysFreqMeta">--</div>
+              </div>
+              <div class="sys-card">
+                <div class="sys-label">📊 负载</div>
+                <div class="sys-big" id="sysLoad">--</div>
+                <div class="meter"><div class="meter-bar" id="sysLoadBar"></div></div>
+                <div class="sys-meta" id="sysLoadMeta">1/5/15</div>
+              </div>
+              <div class="sys-card">
+                <div class="sys-label">🕐 运行时长</div>
+                <div class="sys-big" id="sysUptime">--</div>
+                <div class="meter"><div class="meter-bar" id="sysUptimeBar"></div></div>
+                <div class="sys-meta" id="sysUptimeMeta">--</div>
+              </div>
+            </div>
+            <div class="sys-note" id="sysNote">--</div>
+          </section>
+
         </div>
       </div>
     </div>
@@ -790,6 +926,137 @@
     confirmPwd.addEventListener("keydown", (e) => {
       if (e.key === "Enter") document.getElementById("pwdSave").click();
     });
+
+    // ===== 左侧 Tab 切换 =====
+    let sysTimer = null;
+    const sideTabs = document.querySelectorAll('.side-tab');
+    const dashTitle = document.getElementById('dashTitle');
+    const statsPeriodEl = document.getElementById('statsPeriod');
+
+    function switchTab(tab) {
+      sideTabs.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+      document.getElementById('panel-stats').classList.toggle('active', tab === 'stats');
+      document.getElementById('panel-sys').classList.toggle('active', tab === 'sys');
+      dashTitle.textContent = tab === 'stats' ? '📊 访问统计' : '🖥 服务器监控';
+      statsPeriodEl.textContent = tab === 'stats' ? '最近 7 天' : '每秒自动刷新';
+      if (tab === 'sys') {
+        if (!sysTimer) { loadSys(); sysTimer = setInterval(loadSys, 1000); }
+      } else {
+        stopSysTimer();
+      }
+    }
+    function stopSysTimer() {
+      if (sysTimer) { clearInterval(sysTimer); sysTimer = null; }
+    }
+    sideTabs.forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+    // 退出登录时停止监控轮询
+    logoutBtn.addEventListener('click', () => { stopSysTimer(); });
+
+    // ===== 服务器监控 =====
+    function setNum(id, v, suffix) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = v + (suffix || '');
+    }
+    function setBar(id, pct) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      pct = Math.max(0, Math.min(100, pct));
+      el.style.width = pct + '%';
+      el.classList.toggle('hot', pct >= 90);
+      el.classList.toggle('warn', pct >= 75 && pct < 90);
+    }
+    function fmtUptime(s) {
+      if (!isFinite(s) || s < 0) return '--';
+      const d = Math.floor(s / 86400);
+      const h = Math.floor((s % 86400) / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      return d > 0 ? d + '天 ' + h + '时' : (h > 0 ? h + '时 ' + m + '分' : m + '分');
+    }
+    function fmtHz(raw) {
+      if (!raw) return '--';
+      // vcgencmd 输出形如 frequency(48)=1500398464，取最后一个 = 后的数字
+      const s = String(raw);
+      const idx = s.lastIndexOf('=');
+      const numStr = idx >= 0 ? s.slice(idx + 1) : s;
+      const hz = parseInt(numStr, 10);
+      if (!isFinite(hz)) return '--';
+      return (hz / 1e6).toFixed(0) + ' MHz';
+    }
+    function throttleNote(raw) {
+      if (!raw) return '--';
+      const m = String(raw).match(/0[xX]([0-9a-fA-F]+)/);
+      const v = m ? parseInt(m[1], 16) : NaN;
+      if (isNaN(v)) return raw;
+      const bits = [];
+      if (v & 0x1) bits.push('⚠️ 曾经欠压');
+      if (v & 0x2) bits.push('⚠️ 曾经降频');
+      if (v & 0x4) bits.push('⚠️ 曾经过热限流');
+      if (v & 0x10000) bits.push('🔴 当前欠压');
+      if (v & 0x20000) bits.push('🔴 当前降频');
+      if (v & 0x40000) bits.push('🔴 当前过热限流');
+      return bits.length ? bits.join(' · ') : '✅ 供电/散热正常（0x' + v.toString(16) + '）';
+    }
+
+    async function loadSys() {
+      try {
+        const res = await fetch('/api/system', creds);
+        const d = await res.json();
+        if (!d.ok) return;
+
+        document.getElementById('sysClock').textContent = '更新于 ' + d.time;
+
+        const cpu = d.cpu || {};
+        const usage = isFinite(cpu.usage) && cpu.usage >= 0 ? cpu.usage : -1;
+        setNum('sysCpu', usage < 0 ? '--' : usage.toFixed(1), '%');
+        setBar('sysCpuBar', usage < 0 ? 0 : usage);
+        // 每核明细（所有核平均）
+        const perCore = Array.isArray(cpu.per_core) ? cpu.per_core : [];
+        setNum('sysCpuMeta', (cpu.cores || '--') + ' 核' + (perCore.length ? ' · ' + perCore.map(x => isFinite(x) ? Math.round(x) : 0).join('/') + '%' : ''));
+
+        const mem = d.mem || {};
+        const mu = isFinite(mem.usage) ? mem.usage : -1;
+        setNum('sysMem', mu < 0 ? '--' : mu.toFixed(1), '%');
+        setBar('sysMemBar', mu < 0 ? 0 : mu);
+        setNum('sysMemMeta', (mem.used_gb ?? '--') + ' / ' + (mem.total_gb ?? '--') + ' GB');
+
+        const disk = d.disk || {};
+        const du = isFinite(disk.usage) ? disk.usage : -1;
+        setNum('sysDisk', du < 0 ? '--' : du.toFixed(1), '%');
+        setBar('sysDiskBar', du < 0 ? 0 : du);
+        setNum('sysDiskMeta', (disk.used_gb ?? '--') + ' / ' + (disk.total_gb ?? '--') + ' GB');
+
+        const t = isFinite(d.temp_c) && d.temp_c > 0 ? d.temp_c : -1;
+        setNum('sysTemp', t < 0 ? '--' : t.toFixed(1), '°C');
+        setBar('sysTempBar', t < 0 ? 0 : ((t - 30) / 50) * 100); // 30~80°C 映射到进度条
+        setNum('sysTempMeta', t < 0 ? '不可用' : (t >= 75 ? '⚠ 温度偏高' : (t >= 60 ? '偏高' : '正常')));
+
+        const v = isFinite(d.voltage) && d.voltage > 0 ? d.voltage : -1;
+        setNum('sysVolt', v < 0 ? '--' : v.toFixed(2), 'V');
+        setBar('sysVoltBar', v < 0 ? 0 : ((v - 0.7) / 0.8) * 100); // 0.7~1.5V 映射
+        setNum('sysVoltMeta', v < 0 ? '不可用' : (v < 0.8 ? '⚠️ 偏低' : '正常'));
+
+        const f = d.freq || {};
+        const armTxt = fmtHz(f.arm_hz);
+        setNum('sysFreq', armTxt);
+        setBar('sysFreqBar', armTxt === '--' ? 0 : 60);
+        setNum('sysFreqMeta', 'arm ' + armTxt + (f.core_hz ? ' · core ' + fmtHz(f.core_hz) : ''));
+
+        const load = d.load || [];
+        const l1 = isFinite(load[0]) ? load[0] : -1;
+        const cores = (cpu.cores || 1);
+        setNum('sysLoad', l1 < 0 ? '--' : l1.toFixed(2));
+        setBar('sysLoadBar', l1 < 0 ? 0 : (l1 / cores) * 100);
+        setNum('sysLoadMeta', '1min ' + (isFinite(load[0]) ? load[0].toFixed(2) : '--') + ' · 5min ' + (isFinite(load[1]) ? load[1].toFixed(2) : '--') + ' · 15min ' + (isFinite(load[2]) ? load[2].toFixed(2) : '--'));
+
+        setNum('sysUptime', fmtUptime(d.uptime_s));
+        setNum('sysUptimeMeta', '开机时长');
+
+        document.getElementById('sysNote').textContent = '供电/降频状态：' + throttleNote(d.throttled);
+      } catch(e) {
+        // 网络/会话异常时静默，等待下轮
+      }
+    }
 
     // ===== 初始化：校验 session =====
     (async function() {
