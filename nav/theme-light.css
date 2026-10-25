@@ -1,0 +1,34 @@
+/**
+ * VTC 明亮主题（工具页通用）
+ * 工具页均为单文件深色 UI，这里用「整体反相 + 色相回正」的方式统一转浅色，
+ * 图片/视频/画布/嵌入页再反相一次，保持原始颜色。
+ * 管理后台的三个图表画布只反相一次，因此保持浅色图表外观。
+ */
+html[data-theme="light"] {
+  background: #ffffff;
+  color-scheme: light;
+}
+
+html[data-theme="light"] body {
+  /* 保持原深色背景，交给滤镜反相成白色；不要在这里覆盖背景色 */
+  filter: invert(1) hue-rotate(180deg);
+}
+
+html[data-theme="light"] img,
+html[data-theme="light"] video,
+html[data-theme="light"] canvas,
+html[data-theme="light"] iframe {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* 管理后台 Chart.js 画布：不重复反相，得到浅色图表 */
+html[data-theme="light"] #toolChart,
+html[data-theme="light"] #hourlyChart,
+html[data-theme="light"] #trendChart {
+  filter: none !important;
+}
+
+/* 打印时恢复原样 */
+@media print {
+  html[data-theme="light"] body { filter: none; }
+}

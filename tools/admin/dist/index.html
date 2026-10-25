@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+  <script src="/theme.js?v=1"></script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>管理后台 · 访问统计</title>
@@ -260,6 +261,7 @@
       .visit-header { flex-direction: column; align-items: flex-start; gap: 8px; }
     }
   </style>
+  <link rel="stylesheet" href="/theme-light.css?v=1"/>
 </head>
 <body>
   <div class="container">
@@ -361,6 +363,12 @@
                 <div class="sys-big" id="sysMem">--%</div>
                 <div class="meter"><div class="meter-bar" id="sysMemBar"></div></div>
                 <div class="sys-meta" id="sysMemMeta">-- / -- GB</div>
+              </div>
+              <div class="sys-card">
+                <div class="sys-label">🔄 交换分区</div>
+                <div class="sys-big" id="sysSwap">--%</div>
+                <div class="meter"><div class="meter-bar" id="sysSwapBar"></div></div>
+                <div class="sys-meta" id="sysSwapMeta">-- / -- GB</div>
               </div>
               <div class="sys-card">
                 <div class="sys-label">💽 磁盘 /</div>
@@ -1020,6 +1028,15 @@
         setBar('sysMemBar', mu < 0 ? 0 : mu);
         setNum('sysMemMeta', (mem.used_gb ?? '--') + ' / ' + (mem.total_gb ?? '--') + ' GB');
 
+        const swap = d.swap || {};
+        const su = isFinite(swap.usage) ? swap.usage : -1;
+        const swapTotal = swap.total_gb ?? 0;
+        setNum('sysSwap', su < 0 ? '--' : su.toFixed(1), '%');
+        setBar('sysSwapBar', su < 0 ? 0 : su);
+        setNum('sysSwapMeta', swapTotal > 0
+          ? (swap.used_gb ?? '--') + ' / ' + swapTotal + ' GB'
+          : '未启用');
+
         const disk = d.disk || {};
         const du = isFinite(disk.usage) ? disk.usage : -1;
         setNum('sysDisk', du < 0 ? '--' : du.toFixed(1), '%');
@@ -1071,5 +1088,41 @@
       // session 无效，显示登录页（默认 state）
     })();
   </script>
+
+<script>
+/* VTC：明亮主题下调整 Chart.js 文字颜色（画布只反相一次，这里设置的是反相前的颜色） */
+(function () {
+  function isLight() { return document.documentElement.getAttribute('data-theme') === 'light'; }
+  function applyChartTheme() {
+    if (!window.Chart || !Chart.getChart) return;
+    var tick = isLight() ? '#b5b5b5' : '#666';
+    ['toolChart', 'hourlyChart', 'trendChart'].forEach(function (id) {
+      var chart = Chart.getChart(id);
+      if (!chart) return;
+      var o = chart.options || {};
+      if (o.scales) Object.keys(o.scales).forEach(function (k) {
+        var sc = o.scales[k] || {};
+        sc.ticks = sc.ticks || {};
+        sc.ticks.color = tick;
+      });
+      if (o.plugins && o.plugins.legend && o.plugins.legend.labels) o.plugins.legend.labels.color = tick;
+      chart.update('none');
+    });
+  }
+  window.vtcChartTheme = applyChartTheme;
+  ['renderToolChart', 'renderHourlyChart', 'renderTrendChart'].forEach(function (name) {
+    var orig = window[name];
+    if (typeof orig === 'function' && !orig.__vtcWrapped) {
+      var wrapped = function () { var r = orig.apply(this, arguments); applyChartTheme(); return r; };
+      wrapped.__vtcWrapped = true;
+      window[name] = wrapped;
+    }
+  });
+  window.addEventListener('vtc-theme-change', applyChartTheme);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyChartTheme);
+  else applyChartTheme();
+  setTimeout(applyChartTheme, 1500);
+})();
+</script>
 </body>
 </html>

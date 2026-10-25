@@ -7,6 +7,13 @@
 - **地址**: [https://tools.victor2022.dpdns.org](https://tools.victor2022.dpdns.org)
 - **导航页**: `nav/index.html`（根目录）
 
+### 导航页特性
+
+- 多 Tab 模式：每个工具独立 iframe，切换只显隐不重载，Tab 可拖拽排序并持久化
+- 收藏夹、列表/方格视图、分类筛选、实时搜索
+- **主题切换**：右上角按钮在黑暗 / 明亮主题间切换，选择写入 `localStorage`（键名 `vtc_theme`），刷新与重开页面后保持。
+- **全局生效**：工具页通过 `/theme.js` + `/theme-light.css` 跟随同一份主题设置，已打开的工具 iframe 会实时切换；管理后台的 Chart.js 图表也会同步调整坐标轴与图例颜色。
+
 ---
 
 ## 🛠 工具一览
@@ -23,7 +30,7 @@
 | 🔬 **正则表达式** | `/regex/` | 纯静态 HTML/CSS/JS | 实时正则匹配 · 高亮显示 · 语法参考 |
 | 🔤 **转义/反转义** | `/escape/` | 纯静态 HTML/CSS/JS | HTML 实体 · JS/JSON 字符串特殊字符双向转义，支持 \uXXXX |
 | 🖼 **图片混淆** | `/image-obfuscator/` | 纯静态 HTML/CSS/JS | Gilbert 空间填充曲线像素可逆置乱 · 混淆/解混淆 · 本地处理不上传 |
-| 🔐 **管理后台** | `/admin/` | Chart.js + Go API | 密码登录 · 访问统计图表 · IP 明细 · 分页访问记录 · 设备标识跟踪 · 设备打标 |
+| 🔐 **管理后台** | `/admin/` | Chart.js + Go API | 密码登录 · 访问统计图表 · IP 明细 · 分页访问记录 · 设备标识跟踪 · 设备打标 · 服务器监控（CPU/内存/swap/温度） |
 
 ### 娱乐工具集
 

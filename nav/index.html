@@ -6,6 +6,17 @@
   <link rel="manifest" href="/manifest.json"/>
   <link rel="icon" type="image/svg+xml" href="/icon.svg"/>
   <title>Victor's Tool Collection</title>
+  <script>
+    // 主题需在样式解析前应用，避免页面闪烁
+    (function () {
+      try {
+        var saved = localStorage.getItem('vtc_theme');
+        document.documentElement.setAttribute('data-theme', saved === 'light' ? 'light' : 'dark');
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -337,6 +348,98 @@
       .search-bar { flex-wrap: wrap; }
       .view-toggle { margin-left: auto; }
     }
+
+    /* ===== 右上角操作区 ===== */
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+
+    /* ===== 明亮主题 ===== */
+    html[data-theme="light"] body { background: #f5f6f8; color: #24292f; }
+
+    html[data-theme="light"] .tab-bar { background: #fff; border-bottom-color: #e3e6ea; }
+    html[data-theme="light"] .tab { color: #6b7280; border-right-color: #eef0f3; }
+    html[data-theme="light"] .tab:hover { color: #374151; background: #f3f4f6; }
+    html[data-theme="light"] .tab.active { color: #111827; background: #f5f6f8; box-shadow: inset 0 -2px 0 #0f9d94; }
+    html[data-theme="light"] .tab .tab-close { color: #c3c8d0; }
+    html[data-theme="light"] .tab .tab-close:hover { color: #dc2626; }
+
+    html[data-theme="light"] #pane-home {
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(15, 23, 42, 0.03) 0%, transparent 60%),
+        #f5f6f8;
+    }
+    html[data-theme="light"] .pane-iframe { background: #fff; }
+
+    html[data-theme="light"] .header h1 { color: #111827; }
+    html[data-theme="light"] .header .sub { color: #8b93a1; }
+
+    html[data-theme="light"] .search-wrap input { background: #fff; border-color: #dfe3e8; color: #1f2328; }
+    html[data-theme="light"] .search-wrap input::placeholder { color: #a8b0bb; }
+    html[data-theme="light"] .search-wrap .search-icon { color: #9aa3af; }
+
+    html[data-theme="light"] .view-toggle { background: #fff; border-color: #dfe3e8; }
+    html[data-theme="light"] .view-btn { color: #6b7280; }
+    html[data-theme="light"] .view-btn.active { background: #eceff3; color: #0f9d94; }
+    html[data-theme="light"] .view-btn:hover:not(.active) { color: #374151; }
+
+    html[data-theme="light"] .settings-btn { background: #fff; border-color: #dfe3e8; color: #6b7280; }
+    html[data-theme="light"] .settings-btn:hover { border-color: #0f9d94; color: #0f9d94; }
+    html[data-theme="light"] .settings-dropdown {
+      background: #fff; border-color: #e3e6ea;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    }
+    html[data-theme="light"] .setting-item { color: #374151; }
+    html[data-theme="light"] .setting-item:hover { background: #f3f4f6; }
+    html[data-theme="light"] .dropdown-divider { background: #e8ebef; }
+    html[data-theme="light"] .dropdown-link { color: #374151; }
+    html[data-theme="light"] .dropdown-link:hover { background: #f3f4f6; color: #0f9d94; }
+    html[data-theme="light"] .toggle-slider { background: #cfd5dd; }
+    html[data-theme="light"] .toggle-slider::after { background: #fff; }
+    html[data-theme="light"] .setting-item input:checked + .toggle-slider { background: #b9e6e2; }
+    html[data-theme="light"] .setting-item input:checked + .toggle-slider::after { background: #0f9d94; }
+
+    html[data-theme="light"] #allSection { border-top-color: #e6e9ee; }
+    html[data-theme="light"] .section-header { border-bottom-color: #e6e9ee; }
+    html[data-theme="light"] .section-header .label { color: #4b5563; }
+    html[data-theme="light"] .section-header .count { color: #9aa3af; }
+    html[data-theme="light"] .section-header .line { background: linear-gradient(90deg, #e6e9ee, transparent); }
+    html[data-theme="light"] .section-header .action { color: #9aa3af; }
+    html[data-theme="light"] .section-header .collapse-icon { color: #b3bac4; }
+    html[data-theme="light"] .section-empty { border-color: #e0e4e9; color: #9aa3af; }
+    html[data-theme="light"] .section-empty .hint { color: #b3bac4; }
+
+    html[data-theme="light"] .tool-card {
+      background: #fff; border-color: #e3e6ea; color: #374151;
+    }
+    html[data-theme="light"] .tool-card:hover {
+      background: #fff; border-color: #0f9d94;
+      box-shadow: 0 4px 12px rgba(15, 157, 148, 0.08);
+    }
+    html[data-theme="light"] .tool-name { color: #111827; }
+    html[data-theme="light"] .tool-desc { color: #7b8494; }
+    html[data-theme="light"] .tool-arrow { color: #b3bac4; }
+    html[data-theme="light"] .tool-card:hover .tool-arrow { color: #0f9d94; }
+    html[data-theme="light"] .tool-drag-handle { color: #c3c8d0; }
+    html[data-theme="light"] .tool-star { color: #c3c8d0; }
+    html[data-theme="light"] .tool-star.active { color: #e0a800; }
+    html[data-theme="light"] .tool-star:hover { color: #e0a800; }
+    html[data-theme="light"] .tool-icon.dev { background: #fdf6e3; }
+    html[data-theme="light"] .tool-icon.fun { background: #e6f7f4; }
+    html[data-theme="light"] .tool-icon.life { background: #e8f4f9; }
+    html[data-theme="light"] .tool-tag.dev-tag { background: #fdf6e3; color: #b7791f; }
+    html[data-theme="light"] .tool-tag.fun-tag { background: #e6f7f4; color: #0f766e; }
+    html[data-theme="light"] .tool-tag.life-tag { background: #e8f4f9; color: #0369a1; }
+
+    html[data-theme="light"] .cat-tabs { background: #fff; border-color: #e3e6ea; }
+    html[data-theme="light"] .cat-tab { color: #6b7280; }
+    html[data-theme="light"] .cat-tab:hover { color: #374151; }
+    html[data-theme="light"] .cat-tab.active { background: #eceff3; color: #111827; box-shadow: 0 1px 4px rgba(15,23,42,0.06); }
+    html[data-theme="light"] .cat-tab .tab-count { color: #9aa3af; }
+    html[data-theme="light"] .cat-tab.active .tab-count { color: #6b7280; }
+
+    html[data-theme="light"] .footer { border-top-color: #e6e9ee; color: #8b93a1; }
+    html[data-theme="light"] .footer a { color: #6b7280; }
+    html[data-theme="light"] .footer a:hover { color: #0f9d94; }
+    html[data-theme="light"] .footer .sep { color: #d5dae1; }
   </style>
 </head>
 <body>
@@ -368,16 +471,19 @@
         <button class="view-btn active" data-view="list" title="列表">☰</button>
         <button class="view-btn" data-view="grid" title="方格">▦</button>
       </div>
-      <div class="settings-wrap">
-        <button class="settings-btn" id="settingsBtn" title="设置">⚙</button>
-        <div class="settings-dropdown" id="settingsDropdown">
-          <label class="setting-item">
-            <span>Tab 方式打开工具</span>
-            <input type="checkbox" id="tabModeToggle" checked/>
-            <span class="toggle-slider"></span>
-          </label>
-          <div class="dropdown-divider"></div>
-          <div class="dropdown-link" id="adminLink">🔐 管理后台</div>
+      <div class="top-actions">
+        <button class="settings-btn" id="themeBtn" title="切换到明亮主题">🌙</button>
+        <div class="settings-wrap">
+          <button class="settings-btn" id="settingsBtn" title="设置">⚙</button>
+          <div class="settings-dropdown" id="settingsDropdown">
+            <label class="setting-item">
+              <span>Tab 方式打开工具</span>
+              <input type="checkbox" id="tabModeToggle" checked/>
+              <span class="toggle-slider"></span>
+            </label>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-link" id="adminLink">🔐 管理后台</div>
+          </div>
         </div>
       </div>
     </div>
@@ -700,6 +806,7 @@
       iframe.src = tool.url;
       iframe.addEventListener('load', () => {
         hideIframeBackLinks(iframe);
+        try { iframe.contentWindow.postMessage({ type: 'vtc-theme', theme: theme }, '*'); } catch (e) {}
       });
       pane.appendChild(iframe);
       dom.paneTool.appendChild(pane);
@@ -879,6 +986,34 @@
       dom.settingsDropdown.classList.remove('open');
       window.open('/admin/', '_blank');
     });
+
+    // ===== 主题切换 =====
+    const themeBtn = document.getElementById('themeBtn');
+    let theme = lsGetStr('vtc_theme', 'dark') === 'light' ? 'light' : 'dark';
+
+    function applyTheme(t) {
+      theme = t;
+      document.documentElement.setAttribute('data-theme', t);
+      themeBtn.textContent = t === 'light' ? '☀️' : '🌙';
+      themeBtn.title = t === 'light' ? '切换到黑暗主题' : '切换到明亮主题';
+      themeBtn.setAttribute('aria-label', themeBtn.title);
+      // 通知已打开的工具 iframe（storage 事件之外的双保险）
+      document.querySelectorAll('.pane-iframe').forEach(fr => {
+        try { fr.contentWindow.postMessage({ type: 'vtc-theme', theme: t }, '*'); } catch (e) {}
+      });
+    }
+
+    themeBtn.addEventListener('click', () => {
+      const next = theme === 'light' ? 'dark' : 'light';
+      applyTheme(next);
+      lsSetStr('vtc_theme', next);
+    });
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'vtc_theme') applyTheme(e.newValue === 'light' ? 'light' : 'dark');
+    });
+
+    applyTheme(theme);
 
     // ===== 初始化 =====
     dom.tabModeToggle.checked = tabMode;

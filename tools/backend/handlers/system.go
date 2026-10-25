@@ -165,7 +165,7 @@ type SystemHandler struct{}
 // GET /api/system
 func (h *SystemHandler) GetSystem(c *gin.Context) {
 	// 内存
-	memTotal, memAvail := readMemInfo()
+	memTotal, memAvail, swapTotal, swapFree := readMemInfo()
 
 	// 磁盘（根分区）
 	disk := readDisk("/")
@@ -193,6 +193,12 @@ func (h *SystemHandler) GetSystem(c *gin.Context) {
 			"used_gb":      round1(float64(memTotal-memAvail) / 1024 / 1024),
 			"usage":        pct(memTotal, memAvail),
 		},
+		"swap": gin.H{
+			"total_gb": round1(float64(swapTotal) / 1024 / 1024),
+			"free_gb":  round1(float64(swapFree) / 1024 / 1024),
+			"used_gb":  round1(float64(swapTotal-swapFree) / 1024 / 1024),
+			"usage":    pct(swapTotal, swapFree),
+		},
 		"temp_c":  vcgencmdFloat("measure_temp"),
 		"voltage": vcgencmdFloat("measure_volts"),
 		"freq": gin.H{
@@ -208,13 +214,14 @@ func (h *SystemHandler) GetSystem(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// readMemInfo returns (total, available) in KiB from /proc/meminfo.
-func readMemInfo() (uint64, uint64) {
+// readMemInfo returns memory and swap figures in KiB from /proc/meminfo.
+// total, available, swapTotal, swapFree
+func readMemInfo() (uint64, uint64, uint64, uint64) {
 	data, err := os.ReadFile("/proc/meminfo")
 	if err != nil {
-		return 0, 0
+		return 0, 0, 0, 0
 	}
-	var total, avail uint64
+	var total, avail, swapTotal, swapFree uint64
 	for _, line := range strings.Split(string(data), "\n") {
 		fields := strings.Fields(line)
 		if len(fields) < 2 {
@@ -226,12 +233,19 @@ func readMemInfo() (uint64, uint64) {
 			total = val
 		case "MemAvailable:":
 			avail = val
+		case "SwapTotal:":
+			swapTotal = val
+		case "SwapFree:":
+			swapFree = val
 		}
 	}
 	if avail == 0 {
 		avail = total
 	}
-	return total, avail
+	if swapFree == 0 {
+		swapFree = swapTotal
+	}
+	return total, avail, swapTotal, swapFree
 }
 
 // readLoadAvg returns [1m, 5m, 15m] from /proc/loadavg.

@@ -1,4 +1,4 @@
-var CACHE = 'vtc-v4';
+var CACHE = 'vtc-v5';
 var PRECACHE = [
   '/manifest.json',
   '/icon.svg',
