@@ -42,6 +42,7 @@
 
 | 工具 | 路径 | 技术栈 | 功能 |
 |------|------|--------|------|
+| 🎼 **乐谱夹** | `/score-library/` | 纯静态 HTML/CSS/JS + Go API | 多图乐谱 · 本地上传/图片链接导入 · 类型分类 · 名称搜索 · 整页翻看（图片存本机，nginx 直出） |
 | 🌪 **台风观测** | `/typhoon/` | 纯静态 HTML/CSS/JS（iframe 嵌入） | 中央气象台实时台风路径观测 |
 
 ---
@@ -68,6 +69,7 @@ victor-tool-collection/
 │   ├── qrcode/              # 二维码工具
 │   ├── regex/               # 正则表达式测试工具
 │   ├── score-board/         # 记分板（React）
+│   ├── score-library/       # 乐谱夹（上传/搜索/预览）
 │   ├── timestamp/           # 时间戳转换工具
 │   ├── typhoon/             # 台风观测工具
 │   └── webshell/            # Web 终端（ttyd）

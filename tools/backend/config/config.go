@@ -11,6 +11,7 @@ type Config struct {
 	DBType     string `json:"db_type"`
 	DSN        string `json:"dsn"`
 	ServerPort string `json:"server_port"`
+	ScoresDir  string `json:"scores_dir"`
 }
 
 func Load() (*Config, error) {
@@ -45,6 +46,14 @@ func Load() (*Config, error) {
 	}
 	if cfg.ServerPort == "" {
 		cfg.ServerPort = "8003"
+	}
+	if cfg.ScoresDir == "" {
+		// Default: <repo>/data/scores, resolved relative to the executable
+		// (exe lives in tools/backend/, so go up two levels).
+		cfg.ScoresDir = filepath.Join(filepath.Dir(exe), "..", "..", "data", "scores")
+	}
+	if abs, err := filepath.Abs(cfg.ScoresDir); err == nil {
+		cfg.ScoresDir = abs
 	}
 
 	return &cfg, nil

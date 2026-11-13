@@ -23,7 +23,7 @@ func main() {
 	}
 
 	// Auto-migrate all models
-	if err := db.AutoMigrate(&models.Visit{}, &models.Admin{}, &models.Session{}, &models.DeviceLabel{}); err != nil {
+	if err := db.AutoMigrate(&models.Visit{}, &models.Admin{}, &models.Session{}, &models.DeviceLabel{}, &models.Score{}, &models.ScoreImage{}); err != nil {
 		log.Fatalf("AutoMigrate: %v", err)
 	}
 	log.Println("Migration completed")
@@ -40,6 +40,7 @@ func main() {
 	visitHandler := &handlers.VisitHandler{DB: db}
 	deviceLabelHandler := &handlers.DeviceLabelHandler{DB: db}
 	systemHandler := &handlers.SystemHandler{}
+	scoreHandler := &handlers.ScoreHandler{DB: db, Dir: cfg.ScoresDir}
 
 	// Public routes
 	router.POST("/api/login", authHandler.Login)
@@ -47,6 +48,9 @@ func main() {
 	router.GET("/api/check-session", authHandler.CheckSession)
 	router.POST("/api/visit", visitHandler.LogVisit)
 	router.GET("/api/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
+	// 乐谱夹：查看公开，写入需要登录
+	router.GET("/api/scores", scoreHandler.List)
+	router.GET("/api/scores/types", scoreHandler.Types)
 
 	// Protected routes
 	protected := router.Group("/api")
@@ -59,6 +63,11 @@ func main() {
 		protected.POST("/device-labels", deviceLabelHandler.UpsertLabel)
 		protected.DELETE("/device-labels/:device_id", deviceLabelHandler.DeleteLabel)
 		protected.GET("/system", systemHandler.GetSystem)
+		protected.POST("/scores", scoreHandler.Create)
+		protected.PATCH("/scores/:id", scoreHandler.UpdateScore)
+		protected.DELETE("/scores/:id", scoreHandler.Delete)
+		protected.POST("/scores/:id/images", scoreHandler.AddImages)
+		protected.DELETE("/scores/images/:imageId", scoreHandler.DeleteImage)
 	}
 
 	log.Printf("Listening on :%s", cfg.ServerPort)

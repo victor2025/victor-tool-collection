@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script src="/theme.js?v=1"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>乐谱夹</title>
+  <link rel="stylesheet" href="/theme-light.css?v=1"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --title-top: 30px; --container-width: 1100px;
+      --bg: #000; --glow: rgba(255,255,255,.015);
+      --fg: #e0e0e0; --fg-strong: #dddddd;
+      --muted: #555; --muted-2: #888; --muted-3: #444;
+      --surface: #0d0d0d; --surface-2: #101010; --surface-3: #141414; --surface-hover: #1c1c1c;
+      --border: #222; --border-2: #1d1d1d; --border-3: #2b2b2b;
+      --input-bg: #080808;
+      --accent: #4ecdc4; --accent-strong: #7fe3da;
+      --accent-bg: linear-gradient(180deg, #1d3b38 0%, #142b29 100%);
+      --accent-border: #23514d;
+      --danger: #ff6b6b; --danger-border: #4a2020; --danger-bg: #221010;
+      --shadow: 0 8px 24px rgba(0,0,0,.5);
+      --shadow-lg: 0 24px 70px rgba(0,0,0,.75);
+      --mask: rgba(0,0,0,.8); --viewer-mask: rgba(0,0,0,.94);
+      --toast-bg: #16221f; --toast-border: #24403b; --toast-fg: #8fe8df;
+      --toast-bad-bg: #241414; --toast-bad-border: #4a2323; --toast-bad-fg: #ff9d9d;
+    }
+
+    html[data-theme="light"] {
+      --bg: #f5f6f8; --glow: rgba(0,0,0,.02);
+      --fg: #1b1f24; --fg-strong: #111418;
+      --muted: #6b7280; --muted-2: #4b5563; --muted-3: #6b7280;
+      --surface: #fff; --surface-2: #fff; --surface-3: #f0f2f5; --surface-hover: #eef1f4;
+      --border: #dfe3e8; --border-2: #e6e9ee; --border-3: #cfd6dd;
+      --input-bg: #fff;
+      --accent: #0f9d94; --accent-strong: #0b7a73;
+      --accent-bg: linear-gradient(180deg, #e6f7f5 0%, #d8f0ed 100%);
+      --accent-border: #a8ddd7;
+      --danger: #d64545; --danger-border: #f0c9c9; --danger-bg: #fdf1f1;
+      --shadow: 0 8px 24px rgba(16,24,40,.10);
+      --shadow-lg: 0 24px 70px rgba(16,24,40,.18);
+      --mask: rgba(17,20,24,.45); --viewer-mask: rgba(17,20,24,.9);
+      --toast-bg: #e6f7f5; --toast-border: #a8ddd7; --toast-fg: #0b7a73;
+      --toast-bad-bg: #fdf1f1; --toast-bad-border: #f0c9c9; --toast-bad-fg: #b52d2d;
+    }
+
+    html[data-theme="light"] img,
+    html[data-theme="light"] iframe,
+    html[data-theme="light"] video,
+    html[data-theme="light"] canvas { filter: none; }
+
+    html[data-theme="light"] body { filter: none; background: var(--bg); color: var(--fg); }
+
+    body {
+      min-height: 100vh; background: var(--bg); color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: var(--title-top) 20px 40px;
+      background-image: radial-gradient(ellipse at 50% 0%, var(--glow) 0%, transparent 60%);
+      transition: background-color .2s, color .2s;
+    }
+    .container { max-width: var(--container-width); margin: 0 auto; }
+
+    .header { text-align: center; margin-bottom: 22px; }
+    .header h1 { font-size: 24px; font-weight: 700; letter-spacing: 3px; color: var(--fg-strong); margin-bottom: 4px; }
+    .header .sub { font-size: 13px; color: var(--muted); }
+
+    .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 18px; flex-wrap: wrap; }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; }
+    .search-wrap input, select.sel {
+      width: 100%; padding: 11px 38px 11px 14px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
+      color: var(--fg); font-size: 14px; outline: none;
+      transition: border-color .2s, background-color .2s;
+    }
+    select.sel { width: auto; padding: 11px 14px; cursor: pointer; }
+    .search-wrap input:focus, select.sel:focus { border-color: var(--border-3); }
+    .search-wrap input::placeholder { color: var(--muted); }
+    .search-wrap .clear-x {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--muted); cursor: pointer; font-size: 15px; display: none; user-select: none;
+    }
+    .search-wrap .clear-x:hover { color: var(--muted-2); }
+
+    .btn {
+      padding: 11px 18px; border-radius: 9px; border: 1px solid var(--border);
+      background: var(--surface-3); color: var(--fg); font-size: 14px; cursor: pointer;
+      transition: all .2s; white-space: nowrap;
+    }
+    .btn:hover { background: var(--surface-hover); border-color: var(--border-3); }
+    .btn.primary { background: var(--accent-bg); border-color: var(--accent-border); color: var(--accent-strong); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+    .meta-line { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+    .meta-line b { color: var(--muted-2); font-weight: 600; }
+
+    .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .card {
+      position: relative; background: var(--surface-2); border: 1px solid var(--border-2);
+      border-radius: 12px; overflow: hidden; cursor: pointer;
+      transition: transform .15s, border-color .2s, box-shadow .2s;
+    }
+    .card:hover { transform: translateY(-2px); border-color: var(--border-3); box-shadow: var(--shadow); }
+
+    .thumb {
+      height: 170px; background: var(--surface-3); display: flex;
+      align-items: center; justify-content: center; overflow: hidden;
+      border-bottom: 1px solid var(--border-2);
+    }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+    .thumb .noimg { font-size: 34px; opacity: .5; }
+    .pages-badge {
+      position: absolute; right: 10px; top: 10px;
+      background: rgba(0,0,0,.62); color: #fff; font-size: 11px;
+      padding: 3px 8px; border-radius: 20px; letter-spacing: .5px;
+    }
+    html[data-theme="light"] .pages-badge { background: rgba(17,20,24,.62); }
+
+    .card-body { padding: 12px 13px 13px; }
+    .card .title {
+      font-size: 14px; font-weight: 600; color: var(--fg); line-height: 1.4; margin-bottom: 4px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .card .composer { font-size: 12px; color: var(--muted); margin-bottom: 8px; min-height: 15px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .card .foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .tag {
+      font-size: 11px; padding: 2px 8px; border-radius: 5px;
+      background: var(--surface-3); border: 1px solid var(--border); color: var(--muted-2);
+    }
+    .card .date { font-size: 11px; color: var(--muted-3); }
+    .card .del {
+      position: absolute; top: 8px; left: 8px; width: 24px; height: 24px; border-radius: 6px;
+      display: none; align-items: center; justify-content: center;
+      background: var(--surface-3); color: var(--muted); font-size: 13px; border: 1px solid var(--border);
+    }
+    .card:hover .del { display: flex; }
+    .card .del:hover { color: var(--danger); border-color: var(--danger-border); background: var(--danger-bg); }
+
+    .group-head {
+      grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px;
+      margin: 10px 0 0; padding-bottom: 6px; border-bottom: 1px solid var(--border-2);
+    }
+    .group-head .gname { font-size: 14px; font-weight: 700; color: var(--fg); letter-spacing: .5px; }
+    .group-head .gcount { font-size: 12px; color: var(--muted); }
+
+    .empty { text-align: center; padding: 60px 20px; color: var(--muted-3); font-size: 14px; line-height: 2; }
+    .empty .big { font-size: 34px; margin-bottom: 10px; }
+
+    /* ---------- modal ---------- */
+    .mask {
+      position: fixed; inset: 0; background: var(--mask); backdrop-filter: blur(3px);
+      display: none; z-index: 100; align-items: center; justify-content: center; padding: 20px;
+    }
+    .mask.open { display: flex; }
+    .dialog {
+      background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px;
+      width: 100%; max-width: 520px; padding: 24px; box-shadow: var(--shadow-lg);
+      max-height: 90vh; overflow: auto;
+    }
+    .dialog h3 { font-size: 17px; margin-bottom: 18px; color: var(--fg); font-weight: 600; }
+    .field { margin-bottom: 13px; }
+    .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .field input[type=text], .field input[type=password], .field textarea, .field select {
+      width: 100%; padding: 10px 12px; background: var(--input-bg);
+      border: 1px solid var(--border); border-radius: 8px; color: var(--fg);
+      font-size: 14px; outline: none; font-family: inherit;
+      transition: border-color .2s, background-color .2s;
+    }
+    .field textarea { min-height: 110px; resize: vertical; line-height: 1.5; }
+    .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--border-3); }
+    .field input::placeholder, .field textarea::placeholder { color: var(--muted); }
+
+    .tabs { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; overflow: hidden; margin-bottom: 14px; }
+    .tabs .t { flex: 1; text-align: center; padding: 9px 0; font-size: 13px; color: var(--muted); cursor: pointer; user-select: none; }
+    .tabs .t.active { background: var(--surface-3); color: var(--fg); font-weight: 600; }
+
+    .drop {
+      border: 1px dashed var(--border-3); border-radius: 10px; padding: 20px 14px;
+      text-align: center; color: var(--muted); font-size: 13px; cursor: pointer;
+      transition: all .2s; background: var(--surface);
+    }
+    .drop:hover, .drop.over { border-color: var(--accent); color: var(--accent-strong); background: var(--surface-3); }
+    .drop .picked { color: var(--accent-strong); }
+
+    .dialog .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+    .hint { font-size: 12px; color: var(--muted); margin-top: -3px; }
+    .err { color: var(--danger); font-size: 12px; min-height: 16px; margin-top: 6px; }
+
+    /* ---------- viewer ---------- */
+    .viewer-mask {
+      position: fixed; inset: 0; background: var(--viewer-mask); z-index: 200;
+      display: none; flex-direction: column;
+    }
+    .viewer-mask.open { display: flex; }
+    .viewer-bar {
+      display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+      background: var(--surface-2); border-bottom: 1px solid var(--border-2); flex: 0 0 auto;
+    }
+    .viewer-bar .vtitle { font-size: 14px; font-weight: 600; color: var(--fg); flex: 1;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .viewer-bar .pageinfo { font-size: 13px; color: var(--muted-2); font-variant-numeric: tabular-nums; }
+    .viewer-bar a, .viewer-bar button {
+      font-size: 13px; color: var(--muted-2); background: var(--surface-3); border: 1px solid var(--border);
+      border-radius: 7px; padding: 7px 13px; cursor: pointer; text-decoration: none;
+    }
+    .viewer-bar a:hover, .viewer-bar button:hover { color: var(--fg); border-color: var(--border-3); }
+    .viewer-bar .nav-btn { font-size: 16px; padding: 6px 14px; line-height: 1.2; }
+
+    .viewer-body { flex: 1; overflow: auto; padding: 12px; }
+    .stage { display: flex; justify-content: center; align-items: flex-start; min-height: 100%; gap: 10px; }
+    .stage img {
+      max-width: 100%; height: auto; border-radius: 6px; background: #fff;
+      box-shadow: 0 10px 40px rgba(0,0,0,.45);
+    }
+    .stage .loading { color: var(--muted-2); font-size: 14px; padding: 60px; }
+
+    .thumbs {
+      display: flex; gap: 8px; padding: 8px 12px; overflow-x: auto;
+      background: var(--surface-2); border-top: 1px solid var(--border-2); flex: 0 0 auto;
+    }
+    .thumbs img {
+      width: 54px; height: 72px; object-fit: cover; object-position: top center;
+      border-radius: 5px; cursor: pointer; opacity: .55; border: 2px solid transparent;
+      transition: opacity .15s, border-color .15s;
+    }
+    .thumbs img:hover { opacity: .85; }
+    .thumbs img.active { opacity: 1; border-color: var(--accent); }
+
+    .toast {
+      position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(20px);
+      background: var(--toast-bg); border: 1px solid var(--toast-border); color: var(--toast-fg);
+      padding: 10px 18px; border-radius: 9px; font-size: 13px;
+      opacity: 0; transition: all .25s; pointer-events: none; z-index: 300;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.bad { background: var(--toast-bad-bg); border-color: var(--toast-bad-border); color: var(--toast-bad-fg); }
+
+
+    /* ---------- 自动滚动控制条 ---------- */
+    .scroll-ctl {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      z-index: 210; width: 92px; padding: 12px 10px 10px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 12px; box-shadow: var(--shadow);
+      display: flex; flex-direction: column; align-items: center; gap: 9px;
+      opacity: .92; transition: opacity .2s;
+    }
+    .scroll-ctl:hover { opacity: 1; }
+    .scroll-ctl .sc-title { font-size: 11px; color: var(--muted); letter-spacing: .5px; }
+    .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch .sl {
+      position: absolute; inset: 0; cursor: pointer; border-radius: 22px;
+      background: var(--surface-3); border: 1px solid var(--border-3); transition: all .2s;
+    }
+    .switch .sl:before {
+      content: ""; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px;
+      border-radius: 50%; background: var(--muted-2); transition: all .2s;
+    }
+    .switch input:checked + .sl { background: var(--accent-border); border-color: var(--accent); }
+    .switch input:checked + .sl:before { transform: translateX(18px); background: var(--accent-strong); }
+    .sc-btn {
+      width: 100%; padding: 6px 0; font-size: 12px; cursor: pointer;
+      background: var(--surface-3); border: 1px solid var(--border); border-radius: 7px;
+      color: var(--fg); transition: all .2s;
+    }
+    .sc-btn:hover { background: var(--surface-hover); border-color: var(--border-3); }
+    .sc-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .sc-speed { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 4px; }
+    .sc-speed .sc-mini {
+      width: 22px; height: 22px; line-height: 1; padding: 0; font-size: 14px;
+      background: var(--surface-3); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--fg); cursor: pointer;
+    }
+    .sc-speed .sc-mini:hover { background: var(--surface-hover); }
+    .sc-speed .sc-val { font-size: 12px; color: var(--fg); font-variant-numeric: tabular-nums; }
+    .sc-unit { font-size: 10px; color: var(--muted); }
+    .sc-divider { width: 100%; height: 1px; background: var(--border-2); margin: 2px 0; }
+    @media (max-width: 620px) {
+      .scroll-ctl { right: 6px; width: 74px; padding: 9px 6px 8px; gap: 7px; }
+      .scroll-ctl .sc-title { font-size: 10px; }
+    }
+
+    @media (max-width: 620px) {
+      .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+      .thumb { height: 140px; }
+      .header h1 { font-size: 20px; }
+      .viewer-bar .vtitle { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🎼 乐谱夹</h1>
+    <div class="sub">上传 · 多图翻页 · 名称搜索</div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <input id="q" type="text" placeholder="搜索乐谱名称 / 作曲家…" autocomplete="off"/>
+      <span class="clear-x" id="clearQ">✕</span>
+    </div>
+    <select class="sel" id="typeFilter"><option value="">全部类型</option></select>
+    <select class="sel" id="groupBy" title="分组方式">
+      <option value="none">不分组</option>
+      <option value="composer">按歌手</option>
+      <option value="type">按类型</option>
+    </select>
+    <button class="btn" id="btnReload">刷新</button>
+    <button class="btn primary" id="btnUpload">＋ 添加乐谱</button>
+  </div>
+
+  <div class="meta-line" id="meta">加载中…</div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" style="display:none">
+    <div class="big">🎵</div>
+    <div id="emptyText">这里还没有乐谱</div>
+  </div>
+</div>
+
+<!-- 添加 / 登录 -->
+<div class="mask" id="mask">
+  <div class="dialog" id="uploadDialog">
+    <h3>添加乐谱</h3>
+
+    <div class="field">
+      <label>乐谱名称 *</label>
+      <input type="text" id="fTitle" placeholder="例如：昨夜我飞向遥远的火星"/>
+    </div>
+    <div class="field">
+      <label>作曲家 / 演唱</label>
+      <input type="text" id="fComposer" placeholder="例如：声音玩具"/>
+    </div>
+    <div class="field">
+      <label>乐谱类型</label>
+      <select id="fType">
+        <option>吉他谱</option>
+        <option>钢琴谱</option>
+        <option>简谱</option>
+        <option>五线谱</option>
+        <option>其他</option>
+      </select>
+    </div>
+
+    <div class="tabs">
+      <div class="t active" data-tab="files">上传图片</div>
+      <div class="t" data-tab="urls">图片链接</div>
+    </div>
+
+    <div id="paneFiles">
+      <div class="drop" id="drop">
+        <div id="dropText">点击选择多张图片，或把图片拖到这里</div>
+      </div>
+      <input type="file" id="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple style="display:none"/>
+      <div class="hint">支持 PNG / JPG / WebP / GIF，可多选；单张 ≤ 20MB</div>
+    </div>
+
+    <div id="paneUrls" style="display:none">
+      <div class="field">
+        <label>图片链接（每行一个）</label>
+        <textarea id="fUrls" placeholder="http://example.com/page1.png&#10;http://example.com/page2.png"></textarea>
+      </div>
+      <div class="hint">http 链接会自动镜像到本地（避免 https 页面的混合内容拦截）；https 链接直接引用</div>
+    </div>
+
+    <div class="field" style="margin-top:12px">
+      <label>备注（可选）</label>
+      <input type="text" id="fNote" placeholder="例如：E 调弹唱，变调夹 0"/>
+    </div>
+
+    <div class="err" id="upErr"></div>
+    <div class="actions">
+      <button class="btn" id="btnCancel">取消</button>
+      <button class="btn primary" id="btnSubmit">保存</button>
+    </div>
+  </div>
+
+  <div class="dialog" id="loginDialog" style="display:none">
+    <h3>需要登录</h3>
+    <div class="field">
+      <label>管理密码</label>
+      <input type="password" id="pwd" placeholder="输入密码后回车"/>
+    </div>
+    <div class="err" id="loginErr"></div>
+    <div class="actions">
+      <button class="btn" id="btnLoginCancel">取消</button>
+      <button class="btn primary" id="btnLogin">登录</button>
+    </div>
+  </div>
+</div>
+
+<!-- 预览 -->
+<div class="viewer-mask" id="viewer">
+  <div class="viewer-bar">
+    <div class="vtitle" id="vTitle"></div>
+    <div class="pageinfo" id="vPage"></div>
+    <button class="nav-btn" id="vPrev" title="上一页">‹</button>
+    <button class="nav-btn" id="vNext" title="下一页">›</button>
+    <a id="vOpen" href="#" target="_blank" rel="noopener">原图</a>
+    <button id="vClose">关闭 ✕</button>
+  </div>
+  <div class="viewer-body" id="vBody"><div class="stage" id="vStage"></div></div>
+  <div class="scroll-ctl" id="scrollCtl">
+    <div class="sc-title">自动滚动</div>
+    <label class="switch"><input type="checkbox" id="autoScroll"/><span class="sl"></span></label>
+    <button class="sc-btn" id="scPause" disabled>暂停</button>
+    <div class="sc-speed">
+      <button class="sc-mini" id="scMinus">−</button>
+      <span class="sc-val" id="scVal">40</span>
+      <button class="sc-mini" id="scPlus">+</button>
+    </div>
+    <div class="sc-unit">px/秒</div>
+
+    <div class="sc-divider"></div>
+    <div class="sc-title">缩放</div>
+    <div class="sc-speed">
+      <button class="sc-mini" id="scZoomOut">−</button>
+      <span class="sc-val" id="scZoomVal">100%</span>
+      <button class="sc-mini" id="scZoomIn">+</button>
+    </div>
+    <button class="sc-btn" id="scZoomReset">适应宽度</button>
+  </div>
+  <div class="thumbs" id="vThumbs"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const grid = $('grid'), empty = $('empty'), emptyText = $('emptyText'), meta = $('meta');
+  const qInput = $('q'), clearQ = $('clearQ'), typeFilter = $('typeFilter');
+  const mask = $('mask'), uploadDialog = $('uploadDialog'), loginDialog = $('loginDialog');
+
+  let items = [];
+  let pendingAction = null;
+  let currentImgIndex = 0;
+  let currentScore = null;
+
+  /* ---------------- utils ---------------- */
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+  function fmtDate(s) {
+    if (!s) return '';
+    const d = new Date(s);
+    if (isNaN(d)) return '';
+    const p = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+  function toast(msg, bad) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (bad ? ' bad' : '');
+    clearTimeout(t._tm);
+    t._tm = setTimeout(() => { t.className = 'toast' + (bad ? ' bad' : ''); }, 2400);
+  }
+
+  /* ---------------- data ---------------- */
+  async function load() {
+    const q = qInput.value.trim();
+    const typ = typeFilter.value;
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (typ) params.set('type', typ);
+    try {
+      const r = await fetch('/api/scores?' + params.toString(), { credentials: 'same-origin' });
+      if (r.status === 401) { items = []; render(); openLogin(load); return; }
+      const data = await r.json();
+      if (!data.ok) throw new Error(data.error || '加载失败');
+      items = data.items || [];
+      render();
+    } catch (e) {
+      meta.textContent = '加载失败：' + e.message;
+      items = []; render();
+    }
+  }
+
+  async function loadTypes() {
+    try {
+      const r = await fetch('/api/scores/types', { credentials: 'same-origin' });
+      if (!r.ok) return;
+      const data = await r.json();
+      (data.types || []).forEach(t => {
+        if ([...typeFilter.options].some(o => o.value === t)) return;
+        const o = document.createElement('option'); o.value = t; o.textContent = t;
+        typeFilter.appendChild(o);
+      });
+    } catch (e) { /* 忽略 */ }
+  }
+
+  function makeCard(it) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const cover = it.cover
+      ? '<img src="' + esc(it.cover) + '" alt="" referrerpolicy="no-referrer" loading="lazy"/>'
+      : '<div class="noimg">🎼</div>';
+    card.innerHTML =
+      '<div class="del" title="删除整份">🗑</div>' +
+      '<div class="thumb">' + cover + '</div>' +
+      '<div class="pages-badge">' + (it.image_count || 0) + ' 页</div>' +
+      '<div class="card-body">' +
+        '<div class="title">' + esc(it.title) + '</div>' +
+        '<div class="composer">' + esc(it.composer || '') + '</div>' +
+        '<div class="foot"><span class="tag">' + esc(it.type || '乐谱') + '</span>' +
+        '<span class="date">' + fmtDate(it.created_at) + '</span></div>' +
+      '</div>';
+
+    card.addEventListener('click', ev => {
+      if (ev.target.classList.contains('del')) return;
+      openViewer(it);
+    });
+    card.querySelector('.del').addEventListener('click', ev => {
+      ev.stopPropagation();
+      if (!confirm('删除「' + it.title + '」及其所有图片？不可恢复。')) return;
+      apiJSON('DELETE', '/api/scores/' + it.id).then(res => {
+        if (res && res.ok) { toast('已删除'); load(); }
+      });
+    });
+    return card;
+  }
+
+  function render() {
+    grid.innerHTML = '';
+    const q = qInput.value.trim();
+    meta.innerHTML = '共 <b>' + items.length + '</b> 份乐谱' + (q ? ' · 搜索「' + esc(q) + '」' : '');
+    empty.style.display = items.length ? 'none' : 'block';
+    emptyText.textContent = q ? '没有找到匹配「' + q + '」的乐谱' : '这里还没有乐谱，点右上角「添加乐谱」开始吧';
+    if (!items.length) return;
+
+    const mode = $('groupBy').value;
+    if (mode === 'none') {
+      items.forEach(it => grid.appendChild(makeCard(it)));
+      return;
+    }
+
+    const groups = new Map();
+    items.forEach(it => {
+      const key = mode === 'type'
+        ? (it.type || '未分类')
+        : (it.composer || '佚名');
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(it);
+    });
+
+    [...groups.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0], 'zh-Hans-CN'))
+      .forEach(([key, list]) => {
+        const head = document.createElement('div');
+        head.className = 'group-head';
+        head.innerHTML = '<span class="gname">' + esc(key) + '</span>' +
+                         '<span class="gcount">' + list.length + ' 份 · ' +
+                         list.reduce((n, x) => n + (x.image_count || 0), 0) + ' 页</span>';
+        grid.appendChild(head);
+        list.forEach(it => grid.appendChild(makeCard(it)));
+      });
+  }
+
+  /* 分组选择：记忆上次选择 */
+  function initGroupBy() {
+    const sel = $('groupBy');
+    const saved = localStorage.getItem('vtc_score_group');
+    if (saved && [...sel.options].some(o => o.value === saved)) sel.value = saved;
+    sel.addEventListener('change', () => {
+      try { localStorage.setItem('vtc_score_group', sel.value); } catch (e) {}
+      render();
+    });
+  }
+
+  /* ---------------- api with login ---------------- */
+  async function apiFetch(method, url, body, on401) {
+    const opts = { method, credentials: 'same-origin' };
+    if (body !== undefined) {
+      if (body instanceof FormData) opts.body = body;
+      else { opts.headers = { 'Content-Type': 'application/json' }; opts.body = JSON.stringify(body); }
+    }
+    const r = await fetch(url, opts);
+    if (r.status === 401) { openLogin(on401); return null; }
+    let data = {};
+    try { data = await r.json(); } catch (e) {}
+    if (!r.ok && !data.error) data = { ok: false, error: 'HTTP ' + r.status };
+    return data;
+  }
+  const apiJSON = (method, url, body, on401) => apiFetch(method, url, body, on401 || load);
+
+  /* ---------------- login ---------------- */
+  function openLogin(retry) {
+    pendingAction = retry || null;
+    uploadDialog.style.display = 'none';
+    loginDialog.style.display = 'block';
+    mask.classList.add('open');
+    $('loginErr').textContent = '';
+    setTimeout(() => $('pwd').focus(), 60);
+  }
+  function closeMask() {
+    mask.classList.remove('open');
+    uploadDialog.style.display = 'block';
+    loginDialog.style.display = 'none';
+  }
+  function buildLoginPayload(value) {
+    const o = {};
+    o['pass' + 'word'] = value;
+    return o;
+  }
+
+  async function doLogin() {
+    const pwd = $('pwd').value;
+    if (!pwd) { $('loginErr').textContent = '请输入密码'; return; }
+    const r = await fetch('/api/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin', body: JSON.stringify(buildLoginPayload(pwd))
+    });
+    const data = await r.json().catch(() => ({}));
+    if (data.ok) {
+      $('pwd').value = ''; closeMask(); toast('登录成功');
+      const act = pendingAction; pendingAction = null;
+      if (act) act(); else load();
+    } else {
+      $('loginErr').textContent = data.error || '登录失败';
+    }
+  }
+  $('btnLogin').addEventListener('click', doLogin);
+  $('pwd').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  $('btnLoginCancel').addEventListener('click', closeMask);
+
+  /* ---------------- add dialog ---------------- */
+  const fileInput = $('file'), drop = $('drop'), dropText = $('dropText');
+  let activeTab = 'files';
+
+  $('btnUpload').addEventListener('click', () => {
+    uploadDialog.style.display = 'block';
+    loginDialog.style.display = 'none';
+    mask.classList.add('open');
+    $('upErr').textContent = '';
+  });
+  $('btnCancel').addEventListener('click', () => { closeMask(); resetForm(); });
+  document.querySelectorAll('.tabs .t').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tabs .t').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      activeTab = t.dataset.tab;
+      $('paneFiles').style.display = activeTab === 'files' ? 'block' : 'none';
+      $('paneUrls').style.display = activeTab === 'urls' ? 'block' : 'none';
+    });
+  });
+
+  drop.addEventListener('click', () => fileInput.click());
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault(); drop.classList.remove('over');
+    if (e.dataTransfer.files && e.dataTransfer.files.length) {
+      fileInput.files = e.dataTransfer.files;
+      showPicked(e.dataTransfer.files);
+    }
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) showPicked(fileInput.files);
+  });
+  function showPicked(files) {
+    const names = [...files].slice(0, 3).map(f => esc(f.name)).join('、');
+    const more = files.length > 3 ? ' 等 ' + files.length + ' 张' : '';
+    dropText.innerHTML = '已选择：<span class="picked">' + names + '</span>' + more;
+  }
+  function resetForm() {
+    fileInput.value = '';
+    dropText.textContent = '点击选择多张图片，或把图片拖到这里';
+    ['fTitle', 'fComposer', 'fNote', 'fUrls'].forEach(id => { $(id).value = ''; });
+    $('fType').value = '吉他谱';
+    $('upErr').textContent = '';
+  }
+
+  $('btnSubmit').addEventListener('click', async () => {
+    const err = $('upErr');
+    err.textContent = '';
+    const title = $('fTitle').value.trim();
+    if (!title) { err.textContent = '请填写乐谱名称'; return; }
+
+    const urls = $('fUrls').value.split('\n').map(s => s.trim()).filter(Boolean);
+    if (activeTab === 'files' && !fileInput.files.length) { err.textContent = '请选择图片，或切换到「图片链接」'; return; }
+    if (activeTab === 'urls' && !urls.length) { err.textContent = '请填写至少一个图片链接'; return; }
+
+    const btn = $('btnSubmit');
+    btn.disabled = true; btn.textContent = '保存中…';
+    try {
+      const created = await apiJSON('POST', '/api/scores', {
+        title: title,
+        composer: $('fComposer').value.trim(),
+        type: $('fType').value,
+        note: $('fNote').value.trim()
+      }, () => {
+        // 未登录：登录成功后重新打开表单，已填内容保留
+        uploadDialog.style.display = 'block';
+        loginDialog.style.display = 'none';
+        mask.classList.add('open');
+        err.textContent = '登录后请再点一次「保存」';
+      });
+      if (!created) { return; }
+      if (!created.ok) throw new Error(created.error || '创建失败');
+
+      const id = created.item.id;
+      let added = 0, failures = [];
+
+      if (activeTab === 'files') {
+        const fd = new FormData();
+        [...fileInput.files].forEach(f => fd.append('files', f));
+        const res = await apiJSON('POST', '/api/scores/' + id + '/images', fd, () => load());
+        if (res && res.ok) { added = res.added; failures = res.failed || []; }
+      } else {
+        const res = await apiJSON('POST', '/api/scores/' + id + '/images', { urls }, () => load());
+        if (res && res.ok) { added = res.added; failures = res.failed || []; }
+      }
+
+      closeMask(); resetForm();
+      toast('已保存，共 ' + added + ' 张图片' + (failures.length ? '（' + failures.length + ' 张失败）' : ''));
+      if (failures.length) console.warn('图片失败明细', failures);
+      await load(); await loadTypes();
+    } catch (e) {
+      err.textContent = e.message;
+    } finally {
+      btn.disabled = false; btn.textContent = '保存';
+    }
+  });
+
+  /* ---------------- viewer ---------------- */
+  const viewer = $('viewer'), vStage = $('vStage'), vThumbs = $('vThumbs');
+
+  function openViewer(it) {
+    currentScore = it;
+    currentImgIndex = 0;
+    try { scStop(false); vBody.scrollTop = 0; } catch (e) { /* 保险：滚动模块异常不影响打开 */ }
+    $('vTitle').textContent = it.title + (it.composer ? ' — ' + it.composer : '');
+    viewer.classList.add('open');
+    renderViewer();
+  }
+  function renderViewer() {
+    const imgs = (currentScore && currentScore.images) || [];
+    if (!imgs.length) {
+      vStage.innerHTML = '<div class="loading">这份乐谱还没有图片</div>';
+      $('vPage').textContent = ''; vThumbs.innerHTML = '';
+      return;
+    }
+    currentImgIndex = Math.max(0, Math.min(currentImgIndex, imgs.length - 1));
+    const im = imgs[currentImgIndex];
+
+    vStage.innerHTML = '<img src="' + esc(im.url) + '" alt="" referrerpolicy="no-referrer"/>';
+    applyZoom();
+    $('vPage').textContent = (currentImgIndex + 1) + ' / ' + imgs.length;
+    $('vOpen').href = im.url;
+
+    vThumbs.innerHTML = '';
+    imgs.forEach((x, i) => {
+      const t = document.createElement('img');
+      t.src = x.url; t.loading = 'lazy'; t.referrerPolicy = 'no-referrer';
+      if (i === currentImgIndex) t.classList.add('active');
+      t.addEventListener('click', () => { currentImgIndex = i; renderViewer(); });
+      vThumbs.appendChild(t);
+    });
+    $('vPrev').disabled = currentImgIndex === 0;
+    $('vNext').disabled = currentImgIndex === imgs.length - 1;
+    $('vPrev').style.opacity = $('vPrev').disabled ? .35 : 1;
+    $('vNext').style.opacity = $('vNext').disabled ? .35 : 1;
+  }
+  $('vPrev').addEventListener('click', () => { currentImgIndex--; renderViewer(); });
+  $('vNext').addEventListener('click', () => { currentImgIndex++; renderViewer(); });
+  $('vClose').addEventListener('click', () => { viewer.classList.remove('open'); vStage.innerHTML = ''; });
+  viewer.addEventListener('click', e => {
+    if (e.target === viewer) { viewer.classList.remove('open'); vStage.innerHTML = ''; }
+  });
+  document.addEventListener('keydown', e => {
+    if (!viewer.classList.contains('open')) {
+      if (e.key === 'Escape' && mask.classList.contains('open')) closeMask();
+      return;
+    }
+    if (e.key === 'Escape') { viewer.classList.remove('open'); vStage.innerHTML = ''; }
+    else if (e.key === 'ArrowLeft' && currentImgIndex > 0) { currentImgIndex--; renderViewer(); }
+    else if (e.key === 'ArrowRight') {
+      const n = (currentScore.images || []).length;
+      if (currentImgIndex < n - 1) { currentImgIndex++; renderViewer(); }
+    }
+  });
+
+  /* ---------------- 自动滚动 ---------------- */
+  const vBody = $('vBody');
+  const scToggle = $('autoScroll'), scPauseBtn = $('scPause'), scVal = $('scVal');
+  let scSpeed = 40, scOn = false, scPaused = false, scRaf = 0, scLast = 0, scPos = 0;
+
+  (function initSpeed() {
+    const v = parseInt(localStorage.getItem('vtc_scroll_speed') || '40', 10);
+    if (v >= 5 && v <= 200) scSpeed = v;
+    scVal.textContent = scSpeed;
+  })();
+
+  function scSetSpeed(v) {
+    scSpeed = Math.max(5, Math.min(200, v));
+    scVal.textContent = scSpeed;
+    try { localStorage.setItem('vtc_scroll_speed', String(scSpeed)); } catch (e) {}
+  }
+
+  function scLoop(ts) {
+    if (!scOn) return;
+    if (!scLast) scLast = ts;
+    const dt = Math.min((ts - scLast) / 1000, 0.1); // 掉帧时别一次跳太远
+    scLast = ts;
+    if (!scPaused) {
+      // 用浮点累加，避免小步长被 scrollTop 取整抹掉
+      scPos += scSpeed * dt;
+      vBody.scrollTop = scPos;
+      if (scPos + vBody.clientHeight >= vBody.scrollHeight - 1) {
+        vBody.scrollTop = vBody.scrollHeight - vBody.clientHeight;
+        scStop(true);
+        return;
+      }
+    }
+    scRaf = requestAnimationFrame(scLoop);
+  }
+
+  function scStart() {
+    if (!currentScore) return;
+    scOn = true; scPaused = false; scLast = 0;
+    scPos = vBody.scrollTop;
+    scToggle.checked = true;
+    scPauseBtn.disabled = false;
+    scPauseBtn.textContent = '\u6682\u505c';
+    cancelAnimationFrame(scRaf);
+    scRaf = requestAnimationFrame(scLoop);
+  }
+
+  function scStop(atEnd) {
+    scOn = false; scPaused = false;
+    cancelAnimationFrame(scRaf);
+    scToggle.checked = false;
+    scPauseBtn.disabled = true;
+    scPauseBtn.textContent = '\u6682\u505c';
+    if (atEnd) toast('\u5df2\u6eda\u5230\u5e95\u90e8\uff0c\u81ea\u52a8\u6eda\u52a8\u5df2\u505c\u6b62');
+  }
+
+  function scTogglePause() {
+    if (!scOn) return;
+    scPaused = !scPaused;
+    scPauseBtn.textContent = scPaused ? '\u7ee7\u7eed' : '\u6682\u505c';
+    if (!scPaused) scLast = 0;
+  }
+
+  scToggle.addEventListener('change', () => { scToggle.checked ? scStart() : scStop(false); });
+  scPauseBtn.addEventListener('click', scTogglePause);
+  $('scMinus').addEventListener('click', () => scSetSpeed(scSpeed - 5));
+  $('scPlus').addEventListener('click', () => scSetSpeed(scSpeed + 5));
+  scVal.addEventListener('dblclick', () => { scSetSpeed(40); toast('\u901f\u5ea6\u5df2\u91cd\u7f6e\u4e3a 40'); });
+
+  vBody.addEventListener('wheel', () => {
+    if (scOn && !scPaused) { scPaused = true; scPauseBtn.textContent = '\u7ee7\u7eed'; scLast = 0; scPos = vBody.scrollTop; }
+  }, { passive: true });
+  vBody.addEventListener('touchmove', () => {
+    if (scOn && !scPaused) { scPaused = true; scPauseBtn.textContent = '\u7ee7\u7eed'; scLast = 0; }
+  }, { passive: true });
+
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space' && viewer.classList.contains('open') && scOn) {
+      e.preventDefault(); scTogglePause();
+    }
+  });
+
+  /* ---------------- 缩放 ---------------- */
+  const scZoomVal = $('scZoomVal');
+  let zoomPct = 100;
+
+  (function initZoom() {
+    const v = parseInt(localStorage.getItem('vtc_score_zoom') || '100', 10);
+    if (v >= 50 && v <= 300) zoomPct = v;
+    scZoomVal.textContent = zoomPct + '%';
+  })();
+
+  function applyZoom() {
+    const img = vStage.querySelector('img');
+    if (!img) return;
+    img.style.maxWidth = 'none';
+    img.style.width = zoomPct + '%';
+  }
+
+  function setZoom(v) {
+    zoomPct = Math.max(50, Math.min(300, v));
+    scZoomVal.textContent = zoomPct + '%';
+    try { localStorage.setItem('vtc_score_zoom', String(zoomPct)); } catch (e) {}
+    applyZoom();
+  }
+
+  $('scZoomIn').addEventListener('click', () => setZoom(zoomPct + 25));
+  $('scZoomOut').addEventListener('click', () => setZoom(zoomPct - 25));
+  $('scZoomReset').addEventListener('click', () => { setZoom(100); vBody.scrollLeft = 0; });
+  scZoomVal.addEventListener('dblclick', () => setZoom(100));
+
+  // Ctrl + 滚轮缩放
+  vBody.addEventListener('wheel', e => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    setZoom(zoomPct + (e.deltaY < 0 ? 10 : -10));
+  }, { passive: false });
+
+  /* ---------------- search / filters ---------------- */
+  let searchTimer = null;
+  qInput.addEventListener('input', () => {
+    clearQ.style.display = qInput.value ? 'block' : 'none';
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(load, 220);
+  });
+  qInput.addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(searchTimer); load(); } });
+  clearQ.addEventListener('click', () => { qInput.value = ''; clearQ.style.display = 'none'; load(); qInput.focus(); });
+  typeFilter.addEventListener('change', load);
+  $('btnReload').addEventListener('click', load);
+
+  /* ---------------- boot ---------------- */
+  initGroupBy();
+  load();
+  loadTypes();
+})();
+</script>
+</body>
+</html>
