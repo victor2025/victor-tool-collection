@@ -209,9 +209,9 @@
     .viewer-bar .nav-btn { font-size: 16px; padding: 6px 14px; line-height: 1.2; }
 
     .viewer-body { flex: 1; overflow: auto; padding: 12px; }
-    .stage { display: flex; justify-content: center; align-items: flex-start; min-height: 100%; gap: 10px; }
-    .stage img {
-      max-width: 100%; height: auto; border-radius: 6px; background: #fff;
+    .stage { display: flex; flex-direction: column; align-items: center; min-height: 100%; gap: 10px; }
+    .stage img.sheet {
+      display: block; max-width: 100%; height: auto; border-radius: 6px; background: #fff;
       box-shadow: 0 10px 40px rgba(0,0,0,.45);
     }
     .stage .loading { color: var(--muted-2); font-size: 14px; padding: 60px; }
@@ -725,17 +725,20 @@
     }
   });
 
-  /* ---------------- viewer ---------------- */
-  const viewer = $('viewer'), vStage = $('vStage'), vThumbs = $('vThumbs');
+  /* ---------------- viewer（连页模式） ---------------- */
+  const viewer = $('viewer'), vStage = $('vStage'), vThumbs = $('vThumbs'), vBody = $('vBody');
 
   function openViewer(it) {
     currentScore = it;
     currentImgIndex = 0;
-    try { scStop(false); vBody.scrollTop = 0; } catch (e) { /* 保险：滚动模块异常不影响打开 */ }
+    try { scStop(false); } catch (e) {}
     $('vTitle').textContent = it.title + (it.composer ? ' — ' + it.composer : '');
     viewer.classList.add('open');
     renderViewer();
+    vBody.scrollTop = 0;
+    updateActivePage();
   }
+
   function renderViewer() {
     const imgs = (currentScore && currentScore.images) || [];
     if (!imgs.length) {
@@ -743,50 +746,85 @@
       $('vPage').textContent = ''; vThumbs.innerHTML = '';
       return;
     }
-    currentImgIndex = Math.max(0, Math.min(currentImgIndex, imgs.length - 1));
-    const im = imgs[currentImgIndex];
 
-    vStage.innerHTML = '<img src="' + esc(im.url) + '" alt="" referrerpolicy="no-referrer"/>';
+    // 所有页竖向拼接，滚动天然连续
+    vStage.innerHTML = imgs.map((x, i) =>
+      '<img class="sheet" data-idx="' + i + '" src="' + esc(x.url) + '" alt=""' +
+      ' referrerpolicy="no-referrer" loading="' + (i < 2 ? 'eager' : 'lazy') + '"/>'
+    ).join('');
+
     applyZoom();
-    $('vPage').textContent = (currentImgIndex + 1) + ' / ' + imgs.length;
-    $('vOpen').href = im.url;
 
     vThumbs.innerHTML = '';
     imgs.forEach((x, i) => {
       const t = document.createElement('img');
       t.src = x.url; t.loading = 'lazy'; t.referrerPolicy = 'no-referrer';
-      if (i === currentImgIndex) t.classList.add('active');
-      t.addEventListener('click', () => { currentImgIndex = i; renderViewer(); });
+      t.dataset.idx = i;
+      t.addEventListener('click', () => scrollToSheet(i));
       vThumbs.appendChild(t);
     });
-    $('vPrev').disabled = currentImgIndex === 0;
-    $('vNext').disabled = currentImgIndex === imgs.length - 1;
-    $('vPrev').style.opacity = $('vPrev').disabled ? .35 : 1;
-    $('vNext').style.opacity = $('vNext').disabled ? .35 : 1;
+
+    // 图片解码后位置才准确，再刷新一次页码
+    vStage.querySelectorAll('img.sheet').forEach(img => {
+      if (!img.complete) img.addEventListener('load', updateActivePage, { once: true });
+    });
+    updateActivePage();
   }
-  $('vPrev').addEventListener('click', () => { currentImgIndex--; renderViewer(); });
-  $('vNext').addEventListener('click', () => { currentImgIndex++; renderViewer(); });
+
+  function scrollToSheet(i) {
+    const sheet = vStage.querySelector('img.sheet[data-idx="' + i + '"]');
+    if (!sheet) return;
+    vBody.scrollTop = Math.max(0, sheet.offsetTop - 8);
+    updateActivePage();
+  }
+
+  let pageRaf = 0;
+  function updateActivePage() {
+    const sheets = vStage.querySelectorAll('img.sheet');
+    if (!sheets.length) return;
+    const line = vBody.scrollTop + vBody.clientHeight * 0.35;
+    let idx = 0;
+    sheets.forEach((el, i) => { if (el.offsetTop <= line) idx = i; });
+    currentImgIndex = idx;
+    $('vPage').textContent = (idx + 1) + ' / ' + sheets.length;
+    const cur = ((currentScore && currentScore.images) || [])[idx];
+    $('vOpen').href = cur ? cur.url : '#';
+    [...vThumbs.children].forEach((t, i) => t.classList.toggle('active', i === idx));
+  }
+
+  $('vPrev').addEventListener('click', () => scrollToSheet(Math.max(0, currentImgIndex - 1)));
+  $('vNext').addEventListener('click', () => {
+    const n = ((currentScore && currentScore.images) || []).length;
+    scrollToSheet(Math.min(n - 1, currentImgIndex + 1));
+  });
   $('vClose').addEventListener('click', () => { viewer.classList.remove('open'); vStage.innerHTML = ''; });
   viewer.addEventListener('click', e => {
     if (e.target === viewer) { viewer.classList.remove('open'); vStage.innerHTML = ''; }
   });
+
+  // 滚动时更新页码（节流到每帧一次）
+  vBody.addEventListener('scroll', () => {
+    if (!viewer.classList.contains('open') || pageRaf) return;
+    pageRaf = requestAnimationFrame(() => { pageRaf = 0; updateActivePage(); });
+  }, { passive: true });
+
   document.addEventListener('keydown', e => {
     if (!viewer.classList.contains('open')) {
       if (e.key === 'Escape' && mask.classList.contains('open')) closeMask();
       return;
     }
     if (e.key === 'Escape') { viewer.classList.remove('open'); vStage.innerHTML = ''; }
-    else if (e.key === 'ArrowLeft' && currentImgIndex > 0) { currentImgIndex--; renderViewer(); }
+    else if (e.key === 'ArrowLeft') scrollToSheet(Math.max(0, currentImgIndex - 1));
     else if (e.key === 'ArrowRight') {
-      const n = (currentScore.images || []).length;
-      if (currentImgIndex < n - 1) { currentImgIndex++; renderViewer(); }
+      const n = ((currentScore && currentScore.images) || []).length;
+      scrollToSheet(Math.min(n - 1, currentImgIndex + 1));
     }
   });
 
-  /* ---------------- 自动滚动 ---------------- */
-  const vBody = $('vBody');
+  /* ---------------- 自动滚动（连页，无需翻页接力） ---------------- */
   const scToggle = $('autoScroll'), scPauseBtn = $('scPause'), scVal = $('scVal');
   let scSpeed = 40, scOn = false, scPaused = false, scRaf = 0, scLast = 0, scPos = 0;
+  let scHoldTimer = 0, scAutoHold = false;
 
   (function initSpeed() {
     const v = parseInt(localStorage.getItem('vtc_scroll_speed') || '40', 10);
@@ -803,11 +841,13 @@
   function scLoop(ts) {
     if (!scOn) return;
     if (!scLast) scLast = ts;
-    const dt = Math.min((ts - scLast) / 1000, 0.1); // 掉帧时别一次跳太远
+    const dt = Math.min((ts - scLast) / 1000, 0.1);
     scLast = ts;
-    if (!scPaused) {
-      // 用浮点累加，避免小步长被 scrollTop 取整抹掉
-      scPos += scSpeed * dt;
+
+    if (scPaused) {
+      scPos = vBody.scrollTop;          // 暂停期间跟随用户拖动位置
+    } else {
+      scPos += scSpeed * dt;            // 浮点累加，避免小步长被取整抹掉
       vBody.scrollTop = scPos;
       if (scPos + vBody.clientHeight >= vBody.scrollHeight - 1) {
         vBody.scrollTop = vBody.scrollHeight - vBody.clientHeight;
@@ -822,6 +862,7 @@
     if (!currentScore) return;
     scOn = true; scPaused = false; scLast = 0;
     scPos = vBody.scrollTop;
+    scAutoHold = false; clearTimeout(scHoldTimer);
     scToggle.checked = true;
     scPauseBtn.disabled = false;
     scPauseBtn.textContent = '\u6682\u505c';
@@ -831,18 +872,21 @@
 
   function scStop(atEnd) {
     scOn = false; scPaused = false;
+    scAutoHold = false; clearTimeout(scHoldTimer);
     cancelAnimationFrame(scRaf);
     scToggle.checked = false;
     scPauseBtn.disabled = true;
     scPauseBtn.textContent = '\u6682\u505c';
-    if (atEnd) toast('\u5df2\u6eda\u5230\u5e95\u90e8\uff0c\u81ea\u52a8\u6eda\u52a8\u5df2\u505c\u6b62');
+    if (atEnd) toast('\u5df2\u6eda\u5230\u672b\u5c3e\uff0c\u81ea\u52a8\u6eda\u52a8\u5df2\u505c\u6b62');
   }
 
   function scTogglePause() {
     if (!scOn) return;
     scPaused = !scPaused;
+    scAutoHold = false;
+    clearTimeout(scHoldTimer);
     scPauseBtn.textContent = scPaused ? '\u7ee7\u7eed' : '\u6682\u505c';
-    if (!scPaused) scLast = 0;
+    if (!scPaused) { scPos = vBody.scrollTop; scLast = 0; }
   }
 
   scToggle.addEventListener('change', () => { scToggle.checked ? scStart() : scStop(false); });
@@ -851,11 +895,39 @@
   $('scPlus').addEventListener('click', () => scSetSpeed(scSpeed + 5));
   scVal.addEventListener('dblclick', () => { scSetSpeed(40); toast('\u901f\u5ea6\u5df2\u91cd\u7f6e\u4e3a 40'); });
 
-  vBody.addEventListener('wheel', () => {
-    if (scOn && !scPaused) { scPaused = true; scPauseBtn.textContent = '\u7ee7\u7eed'; scLast = 0; scPos = vBody.scrollTop; }
+  // 用户交互：临时暂停，停手 1.2s 后从当前位置自动恢复
+  function scHold() {
+    if (!scOn) return;
+    if (scPaused && !scAutoHold) return;
+    scAutoHold = true;
+    scPaused = true;
+    scPauseBtn.textContent = '\u7ee7\u7eed';
+    scLast = 0;
+    scPos = vBody.scrollTop;
+    clearTimeout(scHoldTimer);
+    scHoldTimer = setTimeout(scResumeAfterHold, 1200);
+  }
+
+  function scResumeAfterHold() {
+    if (!scOn || !scAutoHold) return;
+    scAutoHold = false;
+    scPaused = false;
+    scPos = vBody.scrollTop;
+    scLast = 0;
+    scPauseBtn.textContent = '\u6682\u505c';
+    toast('\u5df2\u4ece\u5f53\u524d\u4f4d\u7f6e\u7ee7\u7eed\u81ea\u52a8\u6eda\u52a8');
+  }
+
+  vBody.addEventListener('wheel', scHold, { passive: true });
+  vBody.addEventListener('touchstart', scHold, { passive: true });
+  vBody.addEventListener('touchmove', scHold, { passive: true });
+  vBody.addEventListener('touchend', () => {
+    if (scOn && scAutoHold) { clearTimeout(scHoldTimer); scHoldTimer = setTimeout(scResumeAfterHold, 700); }
   }, { passive: true });
-  vBody.addEventListener('touchmove', () => {
-    if (scOn && !scPaused) { scPaused = true; scPauseBtn.textContent = '\u7ee7\u7eed'; scLast = 0; }
+  vBody.addEventListener('scroll', () => {
+    if (!scOn || !scPaused) return;
+    scPos = vBody.scrollTop;
+    if (scAutoHold) { clearTimeout(scHoldTimer); scHoldTimer = setTimeout(scResumeAfterHold, 1200); }
   }, { passive: true });
 
   document.addEventListener('keydown', e => {
@@ -875,10 +947,10 @@
   })();
 
   function applyZoom() {
-    const img = vStage.querySelector('img');
-    if (!img) return;
-    img.style.maxWidth = 'none';
-    img.style.width = zoomPct + '%';
+    vStage.querySelectorAll('img.sheet').forEach(img => {
+      img.style.maxWidth = 'none';
+      img.style.width = zoomPct + '%';
+    });
   }
 
   function setZoom(v) {
