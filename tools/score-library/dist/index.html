@@ -436,7 +436,6 @@
   const mask = $('mask'), uploadDialog = $('uploadDialog'), loginDialog = $('loginDialog');
 
   let items = [];
-  let pendingAction = null;
   let currentImgIndex = 0;
   let currentScore = null;
 
@@ -468,7 +467,7 @@
     if (typ) params.set('type', typ);
     try {
       const r = await fetch('/api/scores?' + params.toString(), { credentials: 'same-origin' });
-      if (r.status === 401) { items = []; render(); openLogin(load); return; }
+      if (r.status === 401) { items = []; render(); toast('无权查看', true); return; }
       const data = await r.json();
       if (!data.ok) throw new Error(data.error || '加载失败');
       items = data.items || [];
@@ -513,12 +512,12 @@
       if (ev.target.classList.contains('del')) return;
       openViewer(it);
     });
-    card.querySelector('.del').addEventListener('click', ev => {
+    card.querySelector('.del').addEventListener('click', async ev => {
       ev.stopPropagation();
       if (!confirm('删除「' + it.title + '」及其所有图片？不可恢复。')) return;
-      apiJSON('DELETE', '/api/scores/' + it.id).then(res => {
-        if (res && res.ok) { toast('已删除'); load(); }
-      });
+      const res = await writeRequest('DELETE', '/api/scores/' + it.id);
+      if (res && res.ok) { toast('已删除'); load(); }
+      else toast((res && res.error) || '删除失败', true);
     });
     return card;
   }
@@ -570,61 +569,83 @@
     });
   }
 
-  /* ---------------- api with login ---------------- */
-  async function apiFetch(method, url, body, on401) {
+  /* ---------------- api（写操作按请求带密码） ---------------- */
+  async function apiFetch(method, url, body, password) {
     const opts = { method, credentials: 'same-origin' };
+    const headers = {};
     if (body !== undefined) {
-      if (body instanceof FormData) opts.body = body;
-      else { opts.headers = { 'Content-Type': 'application/json' }; opts.body = JSON.stringify(body); }
+      if (body instanceof FormData) {
+        opts.body = body;
+      } else {
+        headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(body);
+      }
     }
+    if (password) headers['X-VTC-Password'] = password;
+    if (Object.keys(headers).length) opts.headers = headers;
+
     const r = await fetch(url, opts);
-    if (r.status === 401) { openLogin(on401); return null; }
     let data = {};
     try { data = await r.json(); } catch (e) {}
     if (!r.ok && !data.error) data = { ok: false, error: 'HTTP ' + r.status };
     return data;
   }
-  const apiJSON = (method, url, body, on401) => apiFetch(method, url, body, on401 || load);
+  const apiJSON = (method, url, body, password) => apiFetch(method, url, body, password);
 
-  /* ---------------- login ---------------- */
-  function openLogin(retry) {
-    pendingAction = retry || null;
-    uploadDialog.style.display = 'none';
-    loginDialog.style.display = 'block';
-    mask.classList.add('open');
-    $('loginErr').textContent = '';
-    setTimeout(() => $('pwd').focus(), 60);
+  // 写操作：先按登录态尝试，只有服务端要密码时才弹框
+  let cachedPwd = '';
+  async function writeRequest(method, url, body) {
+    let res = await apiJSON(method, url, body, cachedPwd);
+    const needPwd = res && res.ok === false && (res.error === '需要密码' || res.error === '密码错误');
+    if (!needPwd) return res;
+
+    if (cachedPwd) cachedPwd = '';           // 缓存的密码已失效
+    const pwd = await promptPassword('此操作需要密码');
+    if (!pwd) return null;
+    res = await apiJSON(method, url, body, pwd);
+    if (res && res.ok) cachedPwd = pwd;      // 本次页面会话内复用，避免反复弹框
+    return res;
   }
+
+  /* ---------------- 密码提示（每次写操作单独询问） ---------------- */
+  let pwdResolver = null;
+
+  function promptPassword(title) {
+    return new Promise(resolve => {
+      pwdResolver = resolve;
+      loginDialog.querySelector('h3').textContent = title || '需要密码';
+      uploadDialog.style.display = 'none';
+      loginDialog.style.display = 'block';
+      mask.classList.add('open');
+      $('pwd').value = '';
+      $('loginErr').textContent = '';
+      setTimeout(() => $('pwd').focus(), 60);
+    });
+  }
+
   function closeMask() {
     mask.classList.remove('open');
     uploadDialog.style.display = 'block';
     loginDialog.style.display = 'none';
   }
-  function buildLoginPayload(value) {
-    const o = {};
-    o['pass' + 'word'] = value;
-    return o;
+
+  function finishPassword(value) {
+    const r = pwdResolver;
+    pwdResolver = null;
+    closeMask();
+    if (r) r(value || null);
   }
 
-  async function doLogin() {
-    const pwd = $('pwd').value;
-    if (!pwd) { $('loginErr').textContent = '请输入密码'; return; }
-    const r = await fetch('/api/login', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin', body: JSON.stringify(buildLoginPayload(pwd))
-    });
-    const data = await r.json().catch(() => ({}));
-    if (data.ok) {
-      $('pwd').value = ''; closeMask(); toast('登录成功');
-      const act = pendingAction; pendingAction = null;
-      if (act) act(); else load();
-    } else {
-      $('loginErr').textContent = data.error || '登录失败';
-    }
-  }
-  $('btnLogin').addEventListener('click', doLogin);
-  $('pwd').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-  $('btnLoginCancel').addEventListener('click', closeMask);
+  $('btnLogin').textContent = '确认';
+  $('btnLogin').addEventListener('click', () => {
+    const v = $('pwd').value.trim();
+    if (!v) { $('loginErr').textContent = '请输入密码'; return; }
+    finishPassword(v);
+  });
+  $('pwd').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); $('btnLogin').click(); }
+  });
+  $('btnLoginCancel').addEventListener('click', () => finishPassword(null));
 
   /* ---------------- add dialog ---------------- */
   const fileInput = $('file'), drop = $('drop'), dropText = $('dropText');
@@ -686,19 +707,13 @@
     const btn = $('btnSubmit');
     btn.disabled = true; btn.textContent = '保存中…';
     try {
-      const created = await apiJSON('POST', '/api/scores', {
+      const created = await writeRequest('POST', '/api/scores', {
         title: title,
         composer: $('fComposer').value.trim(),
         type: $('fType').value,
         note: $('fNote').value.trim()
-      }, () => {
-        // 未登录：登录成功后重新打开表单，已填内容保留
-        uploadDialog.style.display = 'block';
-        loginDialog.style.display = 'none';
-        mask.classList.add('open');
-        err.textContent = '登录后请再点一次「保存」';
       });
-      if (!created) { return; }
+      if (!created) throw new Error('请求失败');
       if (!created.ok) throw new Error(created.error || '创建失败');
 
       const id = created.item.id;
@@ -707,10 +722,10 @@
       if (activeTab === 'files') {
         const fd = new FormData();
         [...fileInput.files].forEach(f => fd.append('files', f));
-        const res = await apiJSON('POST', '/api/scores/' + id + '/images', fd, () => load());
+        const res = await writeRequest('POST', '/api/scores/' + id + '/images', fd);
         if (res && res.ok) { added = res.added; failures = res.failed || []; }
       } else {
-        const res = await apiJSON('POST', '/api/scores/' + id + '/images', { urls }, () => load());
+        const res = await writeRequest('POST', '/api/scores/' + id + '/images', { urls });
         if (res && res.ok) { added = res.added; failures = res.failed || []; }
       }
 

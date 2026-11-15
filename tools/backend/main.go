@@ -63,11 +63,17 @@ func main() {
 		protected.POST("/device-labels", deviceLabelHandler.UpsertLabel)
 		protected.DELETE("/device-labels/:device_id", deviceLabelHandler.DeleteLabel)
 		protected.GET("/system", systemHandler.GetSystem)
-		protected.POST("/scores", scoreHandler.Create)
-		protected.PATCH("/scores/:id", scoreHandler.UpdateScore)
-		protected.DELETE("/scores/:id", scoreHandler.Delete)
-		protected.POST("/scores/:id/images", scoreHandler.AddImages)
-		protected.DELETE("/scores/images/:imageId", scoreHandler.DeleteImage)
+	}
+
+	// 乐谱写操作：每次都要密码（不依赖登录会话）
+	scoreWrite := router.Group("/api")
+	scoreWrite.Use(handlers.WriteAuth(db))
+	{
+		scoreWrite.POST("/scores", scoreHandler.Create)
+		scoreWrite.PATCH("/scores/:id", scoreHandler.UpdateScore)
+		scoreWrite.DELETE("/scores/:id", scoreHandler.Delete)
+		scoreWrite.POST("/scores/:id/images", scoreHandler.AddImages)
+		scoreWrite.DELETE("/scores/images/:imageId", scoreHandler.DeleteImage)
 	}
 
 	log.Printf("Listening on :%s", cfg.ServerPort)

@@ -41,13 +41,15 @@ Gin + GORM 后端服务，提供访问记录、认证鉴权、统计查询功能
 | `/api/device-labels/:device_id` | DELETE | Cookie | 删除设备标签 |
 | `/api/scores` | GET | 无 | 乐谱列表 / 搜索（`?q=关键词&type=类型`），含 `images[]` |
 | `/api/scores/types` | GET | 无 | 已使用的乐谱类型（去重） |
-| `/api/scores` | POST | Cookie | 新建乐谱（JSON：`title, composer, type, note, images[]`） |
-| `/api/scores/:id` | PATCH | Cookie | 修改乐谱信息 |
-| `/api/scores/:id` | DELETE | Cookie | 删除乐谱 + 图片行 + 本地文件 |
-| `/api/scores/:id/images` | POST | Cookie | 追加图片（multipart `files` 或 JSON `urls`） |
-| `/api/scores/images/:imageId` | DELETE | Cookie | 删除单张图片 |
+| `/api/scores` | POST | 会话/密码 | 新建乐谱（JSON：`title, composer, type, note, images[]`） |
+| `/api/scores/:id` | PATCH | 会话/密码 | 修改乐谱信息 |
+| `/api/scores/:id` | DELETE | 会话/密码 | 删除乐谱 + 图片行 + 本地文件 |
+| `/api/scores/:id/images` | POST | 会话/密码 | 追加图片（multipart `files` 或 JSON `urls`） |
+| `/api/scores/images/:imageId` | DELETE | 会话/密码 | 删除单张图片 |
 | `/api/system` | GET | Cookie | 服务器实时状态（CPU/内存/swap/温度/电压/频率/负载/磁盘/运行时长，树莓派 vcgencmd） |
 | `/api/health` | GET | 无 | 健康检查 |
+
+> 乐谱写操作的 `会话/密码`：持有有效 `vtc_session` cookie 直接放行；没有会话时校验请求头 `X-VTC-Password: <管理密码>`。
 
 ## 数据库表
 

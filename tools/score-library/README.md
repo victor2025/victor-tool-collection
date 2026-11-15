@@ -13,7 +13,7 @@
 - **连页预览**：所有页竖向拼接在同一滚动容器，滚动连续不中断；缩略图条 / `‹ ›` / 键盘 ←→ 跳转到指定页
 - **缩放**：50%–300%，按钮 ±25% 或 Ctrl+滚轮（±10%），「适应宽度」一键复位
 - **自动滚动**：右侧控制条开关，5–200 px/s 可调（步长 5），支持暂停/继续、空格键切换；手动拖动时临时暂停，停手 1.2s 自动从当前位置续滚；滚到末尾自动停止
-- **鉴权**：**查看公开**（列表 / 搜索 / 类型 / 图片无需登录）；新增、修改、删除需要管理密码（`vtc_session` cookie）
+- **鉴权**：**查看公开**（列表 / 搜索 / 类型 / 图片无需登录）；写操作（新增/修改/删除/补图/删图）**有登录态（`vtc_session`）直接放行，无登录态则每次校验管理密码**（请求头 `X-VTC-Password`）
 
 ## 技术栈
 
@@ -51,17 +51,17 @@ type, note, created_at               source(local|remote), source_url,
 - `source_url` 保留原始出处，便于回溯
 - 删除乐谱会级联删除图片行，并删除对应本地文件
 
-## 接口（读取公开，写入需登录 cookie）
+## 接口（读取公开，写入需登录态或密码）
 
 | 端点 | 方法 | 说明 |
 |------|------|------|
 | `/api/scores?q=&type=` | GET | **公开** · 列表 / 搜索，返回每份乐谱含 `images[]`、`cover`、`image_count` |
 | `/api/scores/types` | GET | **公开** · 返回已使用的乐谱类型（去重） |
-| `/api/scores` | POST | 新建乐谱：`{title, composer, type, note, images:[url...]}` |
-| `/api/scores/:id` | PATCH | 修改 title / composer / type / note |
-| `/api/scores/:id` | DELETE | 删除乐谱 + 图片行 + 本地文件 |
-| `/api/scores/:id/images` | POST | 追加图片：multipart `files`（可多张）或 JSON `{urls:[...]}` |
-| `/api/scores/images/:imageId` | DELETE | 删除单张图片（含本地文件） |
+| `/api/scores` | POST | 新建乐谱：`{title, composer, type, note, images:[url...]}`，需登录态或 `X-VTC-Password` |
+| `/api/scores/:id` | PATCH | 修改 title / composer / type / note，需登录态或 `X-VTC-Password` |
+| `/api/scores/:id` | DELETE | 删除乐谱 + 图片行 + 本地文件，需登录态或 `X-VTC-Password` |
+| `/api/scores/:id/images` | POST | 追加图片：multipart `files`（可多张）或 JSON `{urls:[...]}`，需登录态或 `X-VTC-Password` |
+| `/api/scores/images/:imageId` | DELETE | 删除单张图片（含本地文件），需登录态或 `X-VTC-Password` |
 
 ## 部署
 
