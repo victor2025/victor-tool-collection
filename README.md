@@ -29,6 +29,8 @@
 | ⏰ **时间戳转换** | `/timestamp/` | 纯静态 HTML/CSS/JS | Unix 时间戳 · 秒/毫秒 · 日期 ↔ 时间戳双向转换 |
 | 🔬 **正则表达式** | `/regex/` | 纯静态 HTML/CSS/JS | 实时正则匹配 · 高亮显示 · 语法参考 |
 | 🔤 **转义/反转义** | `/escape/` | 纯静态 HTML/CSS/JS | HTML 实体 · JS/JSON 字符串特殊字符双向转义，支持 \uXXXX |
+| 🧩 **JSON 格式化** | `/json-formatter/` | 纯静态 HTML/CSS/JS | JSON 美化/压缩 · 层级高亮 · 转义处理 |
+| 🔗 **URL 编解码** | `/url-encode/` | 纯静态 HTML/CSS/JS | 百分号编码双向同步 · encodeURI / encodeURIComponent 两种模式 |
 | 🖼 **图片混淆** | `/image-obfuscator/` | 纯静态 HTML/CSS/JS | Gilbert 空间填充曲线像素可逆置乱 · 混淆/解混淆 · 本地处理不上传 |
 | 🔐 **管理后台** | `/admin/` | Chart.js + Go API | 密码登录 · 访问统计图表 · IP 明细 · 分页访问记录 · 设备标识跟踪 · 设备打标 · 服务器监控（CPU/内存/swap/温度） |
 
@@ -58,6 +60,10 @@ victor-tool-collection/
 │   ├── tracker.js           # 访问跟踪脚本（上报 /api/visit）
 │   ├── sw.js                # Service Worker
 │   └── manifest.json        # PWA 清单
+├── shared/
+│   ├── vtc.css              # 公共样式：设计变量（暗/亮真实色板）+ vtc- 组件
+│   ├── migrate_theme.py     # 老页面迁移到变量色板的脚本
+│   └── patch_readability.py # 批量修正低对比文字色 / 中文标题字距
 ├── tools/
 │   ├── admin/               # 管理后台（访问统计仪表盘）
 │   ├── backend/             # Go 后端服务（Gin + GORM）
@@ -75,8 +81,14 @@ victor-tool-collection/
 │   └── webshell/            # Web 终端（ttyd）
 └── deploy/
     ├── README.md             # 部署说明
+    ├── apply-p0.sh           # P0 安全加固安装脚本（sudo）
+    ├── deploy.sh             # 日常部署：测试 + 编译 + 同步 nginx + 重启
+    ├── backup.sh             # 数据库与乐谱备份（cron 每日 03:40）
     └── nginx/
-        └── port-8001.conf    # nginx 站点配置（端口 8001）
+        ├── port-8001.conf            # nginx 站点配置（端口 8001）
+        ├── 00-vtc-limits.conf        # 限流 zone 与回源协议映射
+        ├── 10-vtc-gzip.conf          # CSS/JS/JSON/SVG 压缩
+        └── vtc-security-headers.conf # 安全响应头片段
 ```
 
 ---
@@ -103,8 +115,11 @@ victor-tool-collection/
 - **纯静态工具**: 零依赖 HTML/CSS/JS
 - **终端服务**: ttyd（Web SSH 终端）
 - **访问跟踪**: 前端 tracker.js（localStorage 设备标识 + 页面路径上报）→ Go API → PostgreSQL
-- **会话认证**: 服务端 session（DB 存储）+ cookie
-- **端口**: 8001（HTTP）- 8003（Go Backend API）
+- **会话认证**: 服务端 session（DB 存储）+ cookie（HttpOnly / SameSite=Lax，HTTPS 下附加 Secure）
+- **密码存储**: bcrypt 哈希（cost 10），历史明文启动时自动升级
+- **访问限流**: nginx `limit_req`（登录 / 上报 / 终端 / API）+ 后端进程内限流，超限返回 429
+- **安全响应头**: HSTS、X-Frame-Options、frame-ancestors、nosniff、Referrer-Policy、Permissions-Policy
+- **端口**: 8001（HTTP）- 8003（Go Backend API，仅监听 127.0.0.1）
 
 ---
 
@@ -127,4 +142,6 @@ npm run build    # 构建到 dist/
 
 - 每次添加/修改工具后，必须同步更新 `README.md`
 - 每个工具模块都应有自己的 `README.md`
+- 改 nginx 配置 / 后端代码后跑 `bash deploy/deploy.sh`（测试 → 编译 → 校验 → 重载）
+- 备份：`deploy/backup.sh` 已挂 cron（每日 03:40），产物在 `~/backups/vtc/`，保留 7 份
 - 详见 `AGENTS.md` 的完整变更规范

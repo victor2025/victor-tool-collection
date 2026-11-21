@@ -5,52 +5,53 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>JWT 解码</title>
+  <link rel="stylesheet" href="/shared/vtc.css?v=1"/>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root { --title-top: 30px; --container-width: 860px; }
     body {
       min-height: 100vh;
-      background: #000;
-      color: #e0e0e0;
+      background: var(--vtc-bg);
+      color: var(--vtc-fg);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       padding: var(--title-top) 20px;
       background:
-        radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.015) 0%, transparent 60%),
-        #000;
+        radial-gradient(ellipse at 50% 0%, var(--vtc-bg-elev-2) 0%, transparent 60%),
+        var(--vtc-bg);
     }
     .container { max-width: var(--container-width); margin: 0 auto; }
     .header { text-align: center; margin-bottom: 24px; }
     .back-link {
       display: inline-flex; align-items: center; gap: 6px;
-      color: #555; text-decoration: none; font-size: 13px;
+      color: var(--vtc-fg-3); text-decoration: none; font-size: 13px;
       margin-bottom: 16px; transition: color 0.2s;
     }
-    .back-link:hover { color: #4ecdc4; }
+    .back-link:hover { color: var(--vtc-accent); }
     .header h1 {
-      font-size: 24px; font-weight: 700; letter-spacing: 3px;
-      color: #ddd; margin-bottom: 4px;
+      font-size: 24px; font-weight: 700; letter-spacing: 1px;
+      color: var(--vtc-fg-2); margin-bottom: 4px;
     }
-    .header .sub { font-size: 13px; color: #555; }
+    .header .sub { font-size: 13px; color: var(--vtc-fg-3); }
 
     .card {
-      background: linear-gradient(135deg, #111 0%, #151515 100%);
-      border: 1px solid #222;
+      background: linear-gradient(135deg, var(--vtc-bg-elev) 0%, var(--vtc-bg-elev) 100%);
+      border: 1px solid var(--vtc-bg-elev-2);
       border-radius: 12px;
       padding: 24px;
       margin-bottom: 16px;
     }
     .card-title {
-      font-size: 13px; font-weight: 600; color: #888;
+      font-size: 13px; font-weight: 600; color: var(--vtc-fg-3);
       margin-bottom: 12px; letter-spacing: 1px;
     }
 
     textarea {
       width: 100%;
       padding: 14px;
-      background: #0d0d0d;
-      border: 1px solid #333;
+      background: var(--vtc-bg);
+      border: 1px solid var(--vtc-border);
       border-radius: 8px;
-      color: #e0e0e0;
+      color: var(--vtc-fg);
       font-size: 13px;
       font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
       outline: none;
@@ -58,8 +59,8 @@
       transition: border-color 0.2s;
       line-height: 1.5;
     }
-    textarea:focus { border-color: #4ecdc4; }
-    textarea::placeholder { color: #444; }
+    textarea:focus { border-color: var(--vtc-accent); }
+    textarea::placeholder { color: var(--vtc-fg-3); }
 
     .parts-row {
       display: flex;
@@ -75,9 +76,9 @@
       letter-spacing: 0.5px;
       font-family: monospace;
     }
-    .part-header { background: #2a2820; color: #ffd93d; }
-    .part-payload { background: #1a2a28; color: #4ecdc4; }
-    .part-signature { background: #1e1e2e; color: #c9a0dc; }
+    .part-header { background: var(--vtc-bg-elev-2); color: var(--vtc-warn); }
+    .part-payload { background: var(--vtc-bg-elev-2); color: var(--vtc-accent); }
+    .part-signature { background: var(--vtc-bg-elev); color: var(--vtc-syn-alt); }
 
     .result-grid {
       display: grid;
@@ -90,19 +91,19 @@
 
     .result-panel { min-height: 0; }
     .result-panel .panel-label {
-      font-size: 12px; color: #666; margin-bottom: 6px;
+      font-size: 12px; color: var(--vtc-fg-3); margin-bottom: 6px;
       display: flex; align-items: center; gap: 8px;
     }
     .result-panel .panel-label .copy-btn {
-      font-size: 11px; color: #555; cursor: pointer;
+      font-size: 11px; color: var(--vtc-fg-3); cursor: pointer;
       background: none; border: none; padding: 0;
       transition: color 0.2s;
     }
-    .result-panel .panel-label .copy-btn:hover { color: #4ecdc4; }
+    .result-panel .panel-label .copy-btn:hover { color: var(--vtc-accent); }
 
     pre {
-      background: #0a0a0a;
-      border: 1px solid #222;
+      background: var(--vtc-bg);
+      border: 1px solid var(--vtc-bg-elev-2);
       border-radius: 8px;
       padding: 14px;
       font-size: 12px;
@@ -112,14 +113,14 @@
       white-space: pre-wrap;
       word-break: break-all;
       min-height: 80px;
-      color: #aaa;
+      color: var(--vtc-fg-3);
     }
-    pre .key { color: #7ec8e3; }
-    pre .str { color: #a5d6a7; }
-    pre .num { color: #ffab91; }
-    pre .bool { color: #ce93d8; }
-    pre .null { color: #888; }
-    pre .bracket { color: #888; }
+    pre .key { color: var(--vtc-syn-key); }
+    pre .str { color: var(--vtc-ok); }
+    pre .num { color: var(--vtc-danger); }
+    pre .bool { color: var(--vtc-syn-alt); }
+    pre .null { color: var(--vtc-fg-3); }
+    pre .bracket { color: var(--vtc-fg-3); }
 
     .claims-grid {
       display: grid;
@@ -129,18 +130,18 @@
       line-height: 1.8;
     }
     .claims-grid .claim-key {
-      color: #888; text-align: right;
+      color: var(--vtc-fg-3); text-align: right;
       font-family: monospace;
     }
     .claims-grid .claim-val {
-      color: #e0e0e0;
+      color: var(--vtc-fg);
       font-family: 'JetBrains Mono', 'Fira Code', monospace;
     }
-    .claims-grid .claim-val.expired { color: #ef5350; }
-    .claims-grid .claim-val.valid { color: #66bb6a; }
+    .claims-grid .claim-val.expired { color: var(--vtc-danger); }
+    .claims-grid .claim-val.valid { color: var(--vtc-ok); }
 
     .error-msg {
-      color: #ef5350;
+      color: var(--vtc-danger);
       font-size: 13px;
       padding: 8px 0;
       display: none;
@@ -150,13 +151,12 @@
       text-align: center;
       margin-top: 24px;
       font-size: 12px;
-      color: #333;
+      color: var(--vtc-fg-4);
       letter-spacing: 1px;
     }
   </style>
-  <link rel="stylesheet" href="/theme-light.css?v=1"/>
 </head>
-<body>
+<body class="vtc-native">
   <div class="container">
     <a href="/" class="back-link">← 返回工具集</a>
     <div class="header">
@@ -273,7 +273,7 @@
           if (key === 'exp' || key === 'nbf' || key === 'iat') {
             const d = new Date(val * 1000);
             const now = Date.now() / 1000;
-            extra = `<span style="color:#666;font-size:11px"> (${d.toLocaleString()})</span>`;
+            extra = `<span style="color: #9e9e9e;font-size:11px"> (${d.toLocaleString()})</span>`;
             if (key === 'exp' && val < now) cls = 'expired';
             else if (key === 'exp' && val >= now) cls = 'valid';
           }
@@ -283,7 +283,7 @@
         }
       }
 
-      claimsGrid.innerHTML = hasClaims ? html : '<div style="color:#555;grid-column:1/-1;padding:8px 0">无标准注册声明</div>';
+      claimsGrid.innerHTML = hasClaims ? html : '<div style="color: #949494;grid-column:1/-1;padding:8px 0">无标准注册声明</div>';
       claimsCard.style.display = hasClaims ? 'block' : 'none';
     }
 

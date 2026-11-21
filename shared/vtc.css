@@ -1,0 +1,212 @@
+/**
+ * VTC 共享样式（v1）
+ * ------------------------------------------------------------------
+ * 目的：给新工具和后续逐页迁移提供「一套变量 + 一套基础组件」，
+ *      不再让每个工具页各自复制 200~300 行 CSS、各自维护亮/暗两套颜色。
+ *
+ * 用法：
+ *   1. 在页面 <head> 里、自己的 <style> 之前引入：
+ *        <link rel="stylesheet" href="/shared/vtc.css">
+ *   2. body 加 class="vtc-page"（可选，用于统一基础排版）
+ *   3. 组件类名统一带 vtc- 前缀，避免和历史页面里的 .pane-header 等冲突。
+ *
+ * 注意：亮色主题是「真实色板」而不是整页反相滤镜；
+ *      尚未迁移的老页面仍由 nav/theme-light.css 的 invert 方案兜底。
+ */
+
+/* ========== 设计变量 ========== */
+:root,
+html[data-theme="dark"] {
+  --vtc-bg: #0a0a0a;
+  --vtc-bg-elev: #111111;
+  --vtc-bg-elev-2: #151515;
+  --vtc-border: #222222;
+  --vtc-border-soft: #1a1a1a;
+
+  --vtc-fg: #e8e8e8;      /* 主文字 */
+  --vtc-fg-2: #cccccc;    /* 次文字 */
+  --vtc-fg-3: #9e9e9e;    /* 辅助说明，对比度 ≈6:1 */
+  --vtc-fg-4: #808080;    /* 最弱提示，对比度 ≈5:1（旧的 #333 只有 1.9:1） */
+
+  --vtc-accent: #4ecdc4;
+  --vtc-accent-weak: rgba(78, 205, 196, 0.12);
+  --vtc-warn: #ffd93d;
+  --vtc-danger: #ff6b6b;
+  --vtc-ok: #66bb6a;
+
+  /* 代码语法高亮（json-formatter 等页面共用，亮色下换成深色版保证在白底上可读） */
+  --vtc-syn-key: #569cd6;      /* 键名 / 关键字 */
+  --vtc-syn-str: #ce9178;      /* 字符串 */
+  --vtc-syn-num: #b5cea8;      /* 数字 / 布尔 */
+  --vtc-syn-fn: #dcdcaa;       /* 函数 / 标记 */
+  --vtc-syn-comment: #6a9955;  /* 注释 */
+  --vtc-syn-alt: #ce93d8;      /* 备用标记色（JWT payload 等） */
+  --vtc-code-bg: #161616;      /* 代码块底 */
+  --vtc-accent-border: rgba(78, 205, 196, 0.28);  /* 主色描边/标签框 */
+
+  --vtc-radius: 10px;
+  --vtc-radius-sm: 6px;
+  --vtc-gap: 12px;
+  --vtc-title-top: 30px;  /* 与 AGENTS.md 的标题顶部边距规范一致 */
+}
+
+html[data-theme="light"] {
+  --vtc-bg: #f5f6f8;
+  --vtc-bg-elev: #ffffff;
+  --vtc-bg-elev-2: #eceff3;
+  --vtc-border: #dfe3e8;
+  --vtc-border-soft: #e8ebef;
+
+  --vtc-fg: #111827;
+  --vtc-fg-2: #374151;
+  --vtc-fg-3: #4b5563;
+  --vtc-fg-4: #6b7280;
+
+  --vtc-accent: #0d857e;  /* 在白底上仍满足 AA 的深青色 */
+  --vtc-accent-weak: rgba(13, 133, 126, 0.10);
+  --vtc-warn: #8a6d00;
+  --vtc-danger: #c02626;
+  --vtc-ok: #217a3c;
+
+  --vtc-syn-key: #0b5fa5;
+  --vtc-syn-str: #a04f16;
+  --vtc-syn-num: #2f6f3a;
+  --vtc-syn-fn: #7a6410;
+  --vtc-syn-comment: #4f7a45;
+  --vtc-syn-alt: #6d4b9e;
+  --vtc-code-bg: #f3f4f6;
+  --vtc-accent-border: rgba(13, 133, 126, 0.36);
+}
+
+/* ========== 基础排版 ========== */
+.vtc-page {
+  min-height: 100vh;
+  margin: 0;
+  padding: var(--vtc-title-top) 20px 40px;
+  background: var(--vtc-bg);
+  color: var(--vtc-fg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC',
+               'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 中文标题不加宽字距（字母间距只对拉丁文有意义） */
+.vtc-title {
+  margin: 0 0 4px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--vtc-fg);
+}
+
+.vtc-subtitle {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0;
+  color: var(--vtc-fg-3);
+}
+
+.vtc-container { max-width: 860px; margin: 0 auto; }
+
+/* ========== 组件：面板 ========== */
+.vtc-panel {
+  background: var(--vtc-bg-elev);
+  border: 1px solid var(--vtc-border);
+  border-radius: var(--vtc-radius);
+  overflow: hidden;
+}
+
+.vtc-pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--vtc-border-soft);
+  font-size: 13px;
+  color: var(--vtc-fg-3);
+}
+
+.vtc-pane-header .vtc-left { display: flex; align-items: center; gap: 6px; }
+.vtc-pane-header .vtc-right { display: flex; align-items: center; gap: 4px; }
+
+.vtc-badge {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--vtc-bg-elev-2);
+  color: var(--vtc-fg-4);
+  font-size: 11px;
+}
+
+/* 文本域右上角的「清空 / 复制」按钮组 */
+.vtc-act {
+  padding: 2px 8px;
+  border-radius: var(--vtc-radius-sm);
+  color: var(--vtc-fg-3);
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: color .15s, background .15s;
+}
+.vtc-act:hover { color: var(--vtc-accent); background: var(--vtc-accent-weak); }
+.vtc-act.danger:hover { color: var(--vtc-danger); background: rgba(255, 107, 107, .10); }
+
+/* ========== 组件：输入 ========== */
+.vtc-textarea {
+  display: block;
+  width: 100%;
+  min-height: 180px;
+  padding: 12px;
+  border: 1px solid var(--vtc-border);
+  border-radius: var(--vtc-radius-sm);
+  background: var(--vtc-bg-elev);
+  color: var(--vtc-fg-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+}
+.vtc-textarea:focus { border-color: var(--vtc-accent); }
+.vtc-textarea::placeholder { color: var(--vtc-fg-4); }
+
+/* ========== 组件：按钮 ========== */
+.vtc-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--vtc-border);
+  border-radius: var(--vtc-radius-sm);
+  background: var(--vtc-bg-elev);
+  color: var(--vtc-fg-2);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.vtc-btn:hover { border-color: var(--vtc-accent); color: var(--vtc-accent); }
+.vtc-btn-primary {
+  border-color: var(--vtc-accent);
+  background: var(--vtc-accent-weak);
+  color: var(--vtc-accent);
+}
+
+/* ========== 组件：轻提示 ========== */
+.vtc-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  transform: translate(-50%, 12px);
+  padding: 8px 16px;
+  border-radius: var(--vtc-radius-sm);
+  background: var(--vtc-bg-elev-2);
+  border: 1px solid var(--vtc-border);
+  color: var(--vtc-fg-2);
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+}
+.vtc-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ========== 可访问性 ========== */
+@media (prefers-reduced-motion: reduce) {
+  .vtc-act, .vtc-btn, .vtc-toast { transition: none; }
+}

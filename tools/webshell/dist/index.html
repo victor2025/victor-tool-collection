@@ -5,13 +5,14 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WebShell - SSH 终端</title>
+  <link rel="stylesheet" href="/shared/vtc.css?v=1"/>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root { --title-top: 30px; --container-width: 860px; }
     body {
       min-height: 100vh;
-      background: #0a0a0a;
-      color: #e0e0e0;
+      background: var(--vtc-bg);
+      color: var(--vtc-fg);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       display: flex;
       flex-direction: column;
@@ -24,24 +25,24 @@
       text-align: center;
       margin-bottom: 28px;
     }
-    .header h1 { font-size: 26px; font-weight: 700; color: #4ecdc4; margin-bottom: 4px; }
-    .header .sub { font-size: 13px; color: #555; letter-spacing: 1px; }
+    .header h1 { font-size: 26px; font-weight: 700; color: var(--vtc-accent); margin-bottom: 4px; }
+    .header .sub { font-size: 13px; color: var(--vtc-fg-3); letter-spacing: 1px; }
 
     .back-link {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      color: #555;
+      color: var(--vtc-fg-3);
       text-decoration: none;
       font-size: 13px;
       margin-bottom: 20px;
       transition: color 0.2s;
     }
-    .back-link:hover { color: #4ecdc4; }
+    .back-link:hover { color: var(--vtc-accent); }
 
     .card {
-      background: linear-gradient(135deg, #111 0%, #151515 100%);
-      border: 1px solid #222;
+      background: linear-gradient(135deg, var(--vtc-bg-elev) 0%, var(--vtc-bg-elev) 100%);
+      border: 1px solid var(--vtc-bg-elev-2);
       border-radius: 12px;
       padding: 24px;
       margin-bottom: 16px;
@@ -49,7 +50,7 @@
     .card-title {
       font-size: 14px;
       font-weight: 600;
-      color: #888;
+      color: var(--vtc-fg-3);
       margin-bottom: 16px;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -68,24 +69,24 @@
     .form-group label {
       display: block;
       font-size: 12px;
-      color: #666;
+      color: var(--vtc-fg-3);
       margin-bottom: 4px;
       letter-spacing: 0.5px;
     }
     .form-group input {
       width: 100%;
       padding: 10px 14px;
-      background: #1a1a1a;
-      border: 1px solid #333;
+      background: var(--vtc-bg-elev);
+      border: 1px solid var(--vtc-border);
       border-radius: 8px;
-      color: #e0e0e0;
+      color: var(--vtc-fg);
       font-size: 14px;
       font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
       outline: none;
       transition: border-color 0.2s;
     }
-    .form-group input:focus { border-color: #4ecdc4; }
-    .form-group input::placeholder { color: #444; }
+    .form-group input:focus { border-color: var(--vtc-accent); }
+    .form-group input::placeholder { color: var(--vtc-fg-3); }
 
     .form-actions {
       display: flex;
@@ -107,46 +108,46 @@
       text-decoration: none;
     }
     .btn-primary {
-      background: #4ecdc4;
-      color: #0a0a0a;
+      background: var(--vtc-accent);
+      color: var(--vtc-bg);
     }
-    .btn-primary:hover { background: #45b8b0; transform: translateY(-1px); }
+    .btn-primary:hover { background: var(--vtc-accent); transform: translateY(-1px); }
     .btn-secondary {
-      background: #222;
-      color: #ccc;
+      background: var(--vtc-bg-elev-2);
+      color: var(--vtc-fg-2);
     }
-    .btn-secondary:hover { background: #2a2a2a; }
+    .btn-secondary:hover { background: var(--vtc-bg-elev-2); }
 
     .btn-local {
-      background: #1a2a28;
-      color: #4ecdc4;
-      border: 1px solid #2a3a38;
+      background: var(--vtc-bg-elev-2);
+      color: var(--vtc-accent);
+      border: 1px solid var(--vtc-bg-elev-2);
     }
-    .btn-local:hover { background: #1e3228; border-color: #4ecdc4; }
+    .btn-local:hover { background: var(--vtc-bg-elev-2); border-color: var(--vtc-accent); }
 
     .info-box {
       margin-top: 16px;
       padding: 12px 16px;
-      background: #1a1a1a;
+      background: var(--vtc-bg-elev);
       border-radius: 8px;
       font-size: 12px;
-      color: #555;
+      color: var(--vtc-fg-3);
       line-height: 1.6;
-      border-left: 3px solid #333;
+      border-left: 3px solid var(--vtc-border);
     }
     .info-box kbd {
-      background: #222;
+      background: var(--vtc-bg-elev-2);
       padding: 1px 6px;
       border-radius: 3px;
       font-size: 11px;
-      color: #aaa;
+      color: var(--vtc-fg-3);
       font-family: monospace;
     }
 
     .recent-hosts { margin-top: 16px; }
     .recent-hosts-title {
       font-size: 12px;
-      color: #555;
+      color: var(--vtc-fg-3);
       margin-bottom: 8px;
       letter-spacing: 0.5px;
     }
@@ -155,31 +156,31 @@
       align-items: center;
       gap: 6px;
       padding: 5px 14px;
-      background: #1a1a1a;
-      border: 1px solid #222;
+      background: var(--vtc-bg-elev);
+      border: 1px solid var(--vtc-bg-elev-2);
       border-radius: 6px;
       font-size: 13px;
       font-family: monospace;
-      color: #888;
+      color: var(--vtc-fg-3);
       cursor: pointer;
       margin: 0 6px 6px 0;
       transition: all 0.2s;
     }
     .host-chip:hover {
-      border-color: #4ecdc4;
-      color: #4ecdc4;
-      background: #1a2a28;
+      border-color: var(--vtc-accent);
+      color: var(--vtc-accent);
+      background: var(--vtc-bg-elev-2);
     }
     .host-chip .remove {
       font-size: 10px;
-      color: #444;
+      color: var(--vtc-fg-3);
       cursor: pointer;
     }
-    .host-chip .remove:hover { color: #ff6b6b; }
+    .host-chip .remove:hover { color: var(--vtc-danger); }
 
     .empty-hosts {
       font-size: 12px;
-      color: #333;
+      color: var(--vtc-fg-4);
       font-style: italic;
     }
 
@@ -187,14 +188,13 @@
       text-align: center;
       margin-top: 30px;
       padding-top: 16px;
-      border-top: 1px solid #111;
+      border-top: 1px solid var(--vtc-bg-elev);
       font-size: 12px;
-      color: #333;
+      color: var(--vtc-fg-4);
     }
   </style>
-  <link rel="stylesheet" href="/theme-light.css?v=1"/>
 </head>
-<body>
+<body class="vtc-native">
   <div class="container">
     <a href="/" class="back-link">← 返回工具集</a>
 

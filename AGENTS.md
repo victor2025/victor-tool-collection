@@ -80,6 +80,53 @@
 - **已覆盖工具：** base64、qrcode、json-formatter、jwt-decoder、webshell
 - **新增工具：** 必须遵循此规范，添加 `--title-top` CSS 变量并引用到 body padding-top
 
+### 可读性规范（文字与标题）
+
+深色底（`#0a0a0a`）上的正文文字必须满足 WCAG AA（对比度 ≥ 4.5:1）。
+
+- **禁止**再用 `#333` / `#444` / `#555` 这类低对比灰做正文或提示文字（旧值对比度仅 1.9~3.9:1）
+- **允许的文字层级**：`#e8e8e8`（主）/ `#cccccc`（次）/ `#9e9e9e`（辅助）/ `#808080`（最弱，仍约 5:1）
+- **只改 `color:`**：背景、边框继续沿用原来的 `#111` / `#222` / `#1a1a1a`，不要把文字色和面面色混用
+- 中文标题（h1）**不要**用 3~4px 字距，最多 `1px`；中文靠字重和字号建立层级
+- 英文标题可以保留 2~4px 字距
+
+### 共享样式（新工具必读）
+
+- 公共样式在 `/shared/vtc.css`（站点路径，文件在仓库 `shared/vtc.css`），提供 `--vtc-*` 设计变量（暗/亮两套真实色板，**不是反相滤镜**）和 `vtc-` 前缀的基础组件
+- 新工具优先引入它，而不是再复制一套 200~300 行 CSS：
+  ```html
+  <link rel="stylesheet" href="/shared/vtc.css">
+  ```
+- 组件类名一律加 `vtc-` 前缀，避免与历史页面的 `.pane-header` / `.act` 冲突
+- 老页面仍由 `nav/theme-light.css` 的 invert 方案兜底，迁移时逐页切换，并在迁移页上移除该页对 invert 的依赖
+
+#### 迁移状态（2026-11）
+
+已迁到真实色板（`<body class="vtc-native">`，`theme-light.css` 的 invert 会自动跳过）：
+
+`url-encode`、`timestamp`、`base64`、`escape`、`json-formatter`、`jwt-decoder`、`regex`、`qrcode`、`image-obfuscator`、`typhoon`、`webshell`
+
+仍走 invert 兜底（需单独设计浅色方案，不能机械替换）：
+
+| 页面 | 原因 |
+|---|---|
+| `admin` | 图表颜色写在 JS 里（26 处），canvas 不认 CSS 变量，需改成 `getComputedStyle` 读变量 |
+| `score-library` / `score-board` | 图表 + iframe 记分板，同 admin 问题 |
+| `nav` | 首页自带两套手写色板（68 条 `data-theme` 规则），并非反相方案，可后续单独重构 |
+
+#### 迁移工具
+
+`shared/migrate_theme.py` 用于把老页面机械迁移到变量色板，**只改 `<head>` 的样式引用和 `<style>` 里的颜色，绝不触碰 JS 与 DOM 结构**：
+
+```bash
+python3 shared/migrate_theme.py --dry-run tools/xxx/dist/index.html   # 只报告残留颜色
+python3 shared/migrate_theme.py tools/xxx/dist/index.html             # 实跑
+```
+
+- 输出里「残留≠0」说明还有脚本不认识的色值，需要先扩 `COLOR_MAP` 再跑一次（残留为 0 才算迁完）
+- 迁移后必须核对 JS 未被改动（脚本本身保证，但仍应用 `diff` 抽查一页）
+
+
 ### 已有 README.md 的模块
 
 - `tools/webshell/README.md` — 已有较完整文档，维护时需同步更新
@@ -95,6 +142,10 @@ victor-tool-collection/
 ├── README.md          ← 项目总介绍（必须保持最新）
 ├── nav/               ← 导航页
 │   └── index.html
+├── shared/            ← 公共样式与迁移工具
+│   ├── vtc.css        ← 设计变量 + vtc- 前缀基础组件（新工具优先引用）
+│   ├── migrate_theme.py    ← 老页面迁到变量色板的脚本（只改样式，不动 JS）
+│   └── patch_readability.py ← 批量修正低对比文字色 / 中文标题字距
 ├── tools/             ← 工具模块（每个子目录必须有 README.md）
 │   ├── base64/        Base64 编解码
 │   ├── json-formatter/ JSON 格式化/转义工具

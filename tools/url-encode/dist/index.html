@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script src="/theme.js?v=1"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>URL 编解码</title>
+  <link rel="stylesheet" href="/shared/vtc.css?v=1"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* 颜色全部取自 /shared/vtc.css 的 --vtc-* 变量：暗/亮两套真实色板，不再依赖反相滤镜 */
+    body {
+      min-height: 100vh;
+      padding: 30px 20px 40px;
+      padding: var(--vtc-title-top, 30px) 20px 40px;
+      background: var(--vtc-bg);
+      color: var(--vtc-fg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 24px; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--vtc-fg-3); text-decoration: none; font-size: 13px;
+      margin-bottom: 16px; transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--vtc-accent); }
+    .header h1 {
+      font-size: 24px; font-weight: 700; letter-spacing: 1px;
+      color: var(--vtc-fg); margin-bottom: 4px;
+    }
+    .header .sub { font-size: 13px; color: var(--vtc-fg-3); }
+
+    .card {
+      background: var(--vtc-bg-elev);
+      border: 1px solid var(--vtc-border);
+      border-radius: var(--vtc-radius);
+      padding: 18px 18px 14px;
+      margin-bottom: 14px;
+    }
+
+    .editor-label {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .editor-label .left { display: flex; align-items: center; gap: 8px; }
+    .editor-label .left .name {
+      font-size: 13px; font-weight: 600; color: var(--vtc-fg-3); letter-spacing: 1px;
+    }
+    .editor-label .left .count { font-size: 11px; color: var(--vtc-fg-4); }
+    .editor-label .right { display: flex; align-items: center; gap: 4px; }
+    .editor-label .right .act {
+      padding: 2px 6px; color: var(--vtc-fg-3); font-size: 12px;
+      cursor: pointer; transition: color 0.12s; user-select: none;
+    }
+    .editor-label .right .act:hover { color: var(--vtc-accent); }
+    .editor-label .right .act.clear:hover { color: var(--vtc-danger); }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px 14px;
+      border-radius: var(--vtc-radius-sm);
+      border: 1px solid var(--vtc-border);
+      background: var(--vtc-bg-elev-2);
+      color: var(--vtc-fg);
+      font-family: 'SF Mono', 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    textarea:focus { border-color: var(--vtc-accent); }
+    textarea::placeholder { color: var(--vtc-fg-4); }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid var(--vtc-border); border-radius: var(--vtc-radius-sm);
+      background: var(--vtc-bg-elev-2);
+      color: var(--vtc-fg-2); font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; text-align: center;
+      font-family: inherit;
+    }
+    .btn:hover { transform: translateY(-1px); border-color: var(--vtc-accent); }
+    .btn-primary {
+      color: var(--vtc-accent); border-color: var(--vtc-accent);
+      background: var(--vtc-accent-weak);
+    }
+    .btn-primary:hover { box-shadow: 0 0 12px var(--vtc-accent-weak); }
+    .btn-secondary { color: var(--vtc-warn); border-color: var(--vtc-warn); }
+    .btn-secondary:hover { box-shadow: 0 0 12px rgba(255, 217, 61, 0.18); }
+
+    /* 选项行 */
+    .options-row {
+      display: flex; align-items: center; gap: 12px;
+      margin: 8px 0 0; flex-wrap: wrap;
+    }
+    .opt-group {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--vtc-fg-3);
+    }
+    .opt-group label { cursor: pointer; user-select: none; }
+    .opt-group input[type="checkbox"] {
+      accent-color: var(--vtc-accent);
+      width: 14px; height: 14px; cursor: pointer;
+    }
+    .opt-tip { font-size: 11px; color: var(--vtc-fg-4); margin-left: 4px; }
+
+    /* 预览 */
+    .url-preview {
+      display: none; align-items: center; justify-content: center;
+      padding: 8px; min-height: 36px; margin-top: 6px;
+    }
+    .url-preview.show { display: flex; }
+    .url-preview a {
+      color: var(--vtc-accent); text-decoration: none; font-size: 13px;
+      padding: 4px 12px; border-radius: var(--vtc-radius-sm);
+      border: 1px solid var(--vtc-border); background: var(--vtc-accent-weak);
+      transition: all 0.15s;
+    }
+    .url-preview a:hover { border-color: var(--vtc-accent); }
+    .url-preview .info { font-size: 12px; color: var(--vtc-fg-3); }
+
+    .toast {
+      position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--vtc-bg-elev-2); color: var(--vtc-fg-2);
+      padding: 10px 24px; border-radius: var(--vtc-radius);
+      border: 1px solid var(--vtc-border); font-size: 13px;
+      opacity: 0; transition: all 0.3s ease; pointer-events: none; z-index: 100;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 600px) {
+      body { padding: 16px 12px; }
+      .card { padding: 14px 12px; }
+      textarea { min-height: 100px; }
+    }
+  </style>
+</head>
+<body class="vtc-native">
+  <div class="container">
+    <a href="/" class="back-link">← 返回工具集</a>
+    <div class="header">
+      <h1>🔗 URL 编解码</h1>
+      <div class="sub">URL 编码 · 解码 · 支持中文字符</div>
+    </div>
+
+    <!-- ===== 原文 ===== -->
+    <div class="card">
+      <div class="editor-label">
+        <div class="left">
+          <span class="name">📝 原文</span>
+          <span class="count" id="plainCnt">0</span>
+        </div>
+        <div class="right">
+          <span class="act clear" onclick="clearPlain()">清空</span>
+          <span class="act" onclick="copyPlain()">复制</span>
+        </div>
+      </div>
+      <textarea id="plainText" placeholder="输入原文…" spellcheck="false" oninput="onPlainInput()"></textarea>
+      <div class="options-row">
+        <div class="opt-group">
+          <input type="checkbox" id="fullEncode"/>
+          <label for="fullEncode">编码所有字符</label>
+          <span class="opt-tip">(包括字母数字等基本字符)</span>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="encodeText()">⬇ 编码为 URL</button>
+      </div>
+    </div>
+
+    <!-- ===== URL 编码 ===== -->
+    <div class="card">
+      <div class="editor-label">
+        <div class="left">
+          <span class="name">🔗 URL 编码</span>
+          <span class="count" id="urlCnt">0</span>
+        </div>
+        <div class="right">
+          <span class="act clear" onclick="clearURL()">清空</span>
+          <span class="act" onclick="copyURL()">复制</span>
+        </div>
+      </div>
+      <textarea id="urlText" placeholder="输入 URL 编码字符串…" spellcheck="false" oninput="onURLInput()"></textarea>
+      <div class="url-preview" id="urlPreview">
+        <a id="urlPreviewLink" href="#" target="_blank" rel="noopener">🔗 打开链接</a>
+        <span class="info" id="urlPreviewInfo">—</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="decodeText()">⬆ 解码为原文</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const $ = id => document.getElementById(id)
+
+    function showToast(msg) {
+      const el = $('toast'); el.textContent = msg; el.classList.add('show')
+      clearTimeout(window._tt); window._tt = setTimeout(() => el.classList.remove('show'), 2500)
+    }
+
+    function copyText(text, taId) {
+      if (!text) { showToast('⚠️ 没有内容'); return }
+      if (navigator.clipboard && location.protocol === 'https:') {
+        navigator.clipboard.writeText(text).then(() => showToast('已复制')).catch(() => fallbackCopy(text, taId))
+      } else {
+        fallbackCopy(text, taId)
+      }
+    }
+    function fallbackCopy(text, taId) {
+      const ta = taId ? $(taId) : document.createElement('textarea')
+      if (!taId) {
+        ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px'
+        document.body.appendChild(ta)
+      }
+      ta.select(); ta.setSelectionRange(0, 999999)
+      try { document.execCommand('copy'); showToast('已复制') } catch { showToast('⚠️ 复制失败，请手动选择复制') }
+      if (!taId) document.body.removeChild(ta)
+    }
+
+    function isURLEncoded(str) {
+      return /%[0-9a-fA-F]{2}/.test(str)
+    }
+
+    // ===== 原文面板 =====
+    function onPlainInput() {
+      $('plainCnt').textContent = $('plainText').value.length
+    }
+
+    function encodeText() {
+      const v = $('plainText').value
+      if (!v) { showToast('⚠️ 请输入原文'); return }
+      const full = $('fullEncode').checked
+      try {
+        let r = encodeURIComponent(v)
+        if (full) {
+          r = r.replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase())
+        }
+        $('urlText').value = r
+        $('urlCnt').textContent = r.length
+        updateURLPreview(r)
+      } catch(e) {
+        showToast('⚠️ 编码失败')
+      }
+    }
+
+    function copyPlain() { copyText($('plainText').value, 'plainText') }
+    function clearPlain() {
+      $('plainText').value = ''
+      $('plainCnt').textContent = '0'
+    }
+
+    // ===== URL 编码面板 =====
+    function onURLInput() {
+      $('urlCnt').textContent = $('urlText').value.length
+      updateURLPreview($('urlText').value.trim())
+    }
+
+    function updateURLPreview(text) {
+      const p = $('urlPreview'), link = $('urlPreviewLink'), info = $('urlPreviewInfo')
+      if (!text) { p.classList.remove('show'); return }
+      // 检查解码后是否为完整 URL
+      try {
+        const decoded = decodeURIComponent(text.replace(/\+/g, ' '))
+        const isFullUrl = /^https?:\/\//i.test(decoded) || /^\/\//.test(decoded)
+        if (isFullUrl) {
+          const href = /^\/\//.test(decoded) ? 'https:' + decoded : decoded
+          link.href = href; link.textContent = '🔗 打开链接'
+          info.textContent = decoded.length > 50 ? decoded.slice(0, 50) + '…' : decoded
+          p.classList.add('show'); link.style.display = 'inline'; info.style.display = 'inline'
+          return
+        }
+      } catch(e) {}
+      p.classList.remove('show')
+    }
+
+    function decodeText() {
+      let v = $('urlText').value.trim()
+      if (!v) { showToast('⚠️ 请输入 URL 编码'); return }
+      try {
+        const r = decodeURIComponent(v.replace(/\+/g, ' '))
+        $('plainText').value = r
+        $('plainCnt').textContent = r.length
+      } catch(e) {
+        try {
+          const r = decodeURI(v.replace(/\+/g, ' '))
+          $('plainText').value = r
+          $('plainCnt').textContent = r.length
+        } catch(e2) {
+          showToast('⚠️ 解码失败，内容不是有效的 URL 编码')
+        }
+      }
+    }
+
+    function copyURL() { copyText($('urlText').value, 'urlText') }
+    function clearURL() {
+      $('urlText').value = ''
+      $('urlCnt').textContent = '0'
+      $('urlPreview').classList.remove('show')
+    }
+  </script>
+</body>
+</html>

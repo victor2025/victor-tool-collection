@@ -1,23 +1,28 @@
 /**
- * VTC 明亮主题（工具页通用）
- * 工具页均为单文件深色 UI，这里用「整体反相 + 色相回正」的方式统一转浅色，
- * 图片/视频/画布/嵌入页再反相一次，保持原始颜色。
- * 管理后台的三个图表画布只反相一次，因此保持浅色图表外观。
+ * VTC 明亮主题（老页面兜底方案）
+ * ------------------------------------------------------------------
+ * 尚未迁移到 /shared/vtc.css 真实色板的老页面，仍靠「整体反相 + 色相回正」转浅色。
+ *
+ * 已迁移的页面在 <body> 上带 vtc-native 类，会自动跳过这里的滤镜，
+ * 改由 shared/vtc.css 里的 html[data-theme="light"] 变量提供真实浅色色板。
  */
+
 html[data-theme="light"] {
   background: #ffffff;
   color-scheme: light;
 }
 
-html[data-theme="light"] body {
+/* 只对未迁移页面反相 */
+html[data-theme="light"] body:not(.vtc-native) {
   /* 保持原深色背景，交给滤镜反相成白色；不要在这里覆盖背景色 */
   filter: invert(1) hue-rotate(180deg);
 }
 
-html[data-theme="light"] img,
-html[data-theme="light"] video,
-html[data-theme="light"] canvas,
-html[data-theme="light"] iframe {
+/* 图片/视频/画布/嵌入页再反相一次，保持原始颜色（同样只作用于未迁移页面） */
+html[data-theme="light"] body:not(.vtc-native) img,
+html[data-theme="light"] body:not(.vtc-native) video,
+html[data-theme="light"] body:not(.vtc-native) canvas,
+html[data-theme="light"] body:not(.vtc-native) iframe {
   filter: invert(1) hue-rotate(180deg);
 }
 
@@ -30,5 +35,5 @@ html[data-theme="light"] #trendChart {
 
 /* 打印时恢复原样 */
 @media print {
-  html[data-theme="light"] body { filter: none; }
+  html[data-theme="light"] body:not(.vtc-native) { filter: none; }
 }

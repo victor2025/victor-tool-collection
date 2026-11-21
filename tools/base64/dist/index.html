@@ -5,58 +5,59 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Base64 编解码</title>
+  <link rel="stylesheet" href="/shared/vtc.css?v=1"/>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root { --title-top: 30px; --container-width: 860px; }
     body {
       min-height: 100vh;
-      background: #000;
-      color: #e0e0e0;
+      background: var(--vtc-bg);
+      color: var(--vtc-fg);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       padding: var(--title-top) 20px;
       background:
-        radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.015) 0%, transparent 60%),
-        #000;
+        radial-gradient(ellipse at 50% 0%, var(--vtc-bg-elev-2) 0%, transparent 60%),
+        var(--vtc-bg);
     }
     .container { max-width: var(--container-width); margin: 0 auto; }
     .header { text-align: center; margin-bottom: 24px; }
     .back-link {
       display: inline-flex; align-items: center; gap: 6px;
-      color: #555; text-decoration: none; font-size: 13px;
+      color: var(--vtc-fg-3); text-decoration: none; font-size: 13px;
       margin-bottom: 16px; transition: color 0.2s;
     }
-    .back-link:hover { color: #4ecdc4; }
+    .back-link:hover { color: var(--vtc-accent); }
     .header h1 {
-      font-size: 24px; font-weight: 700; letter-spacing: 3px;
-      color: #ddd; margin-bottom: 4px;
+      font-size: 24px; font-weight: 700; letter-spacing: 1px;
+      color: var(--vtc-fg-2); margin-bottom: 4px;
     }
-    .header .sub { font-size: 13px; color: #555; }
+    .header .sub { font-size: 13px; color: var(--vtc-fg-3); }
 
     .tabs {
       display: flex;
       border-radius: 10px;
-      border: 1px solid #222;
+      border: 1px solid var(--vtc-bg-elev-2);
       overflow: hidden;
       margin-bottom: 20px;
-      background: #0a0a0a;
+      background: var(--vtc-bg);
     }
     .tab {
       flex: 1; padding: 12px 0; text-align: center;
       font-size: 14px; font-weight: 600; cursor: pointer;
-      transition: all 0.2s; color: #555; user-select: none;
+      transition: all 0.2s; color: var(--vtc-fg-3); user-select: none;
     }
     .tab.active {
-      color: #e0e0e0;
-      background: linear-gradient(180deg, #1a1a1a 0%, #151515 100%);
+      color: var(--vtc-fg);
+      background: linear-gradient(180deg, var(--vtc-bg-elev) 0%, var(--vtc-bg-elev) 100%);
     }
-    .tab:not(.active):hover { color: #888; background: #0f0f0f; }
+    .tab:not(.active):hover { color: var(--vtc-fg-3); background: var(--vtc-bg); }
 
     .panel { display: none; }
     .panel.active { display: block; }
 
     .card {
-      background: linear-gradient(135deg, #111 0%, #151515 100%);
-      border: 1px solid #222;
+      background: linear-gradient(135deg, var(--vtc-bg-elev) 0%, var(--vtc-bg-elev) 100%);
+      border: 1px solid var(--vtc-bg-elev-2);
       border-radius: 12px;
       padding: 18px 18px 14px;
       margin-bottom: 14px;
@@ -71,27 +72,27 @@
       display: flex; align-items: center; gap: 8px;
     }
     .editor-label .left .name {
-      font-size: 13px; font-weight: 600; color: #888; letter-spacing: 1px;
+      font-size: 13px; font-weight: 600; color: var(--vtc-fg-3); letter-spacing: 1px;
     }
     .editor-label .left .count {
-      font-size: 11px; color: #444;
+      font-size: 11px; color: var(--vtc-fg-3);
     }
     .editor-label .right {
       display: flex; align-items: center; gap: 4px;
     }
     .editor-label .right .act {
       padding: 2px 6px;
-      color: #555;
+      color: var(--vtc-fg-3);
       font-size: 12px;
       cursor: pointer;
       transition: color 0.12s;
       user-select: none;
     }
     .editor-label .right .act:hover {
-      color: #4ecdc4;
+      color: var(--vtc-accent);
     }
     .editor-label .right .act.clear:hover {
-      color: #ff6b6b;
+      color: var(--vtc-danger);
     }
 
     textarea {
@@ -99,9 +100,9 @@
       min-height: 120px;
       padding: 12px 14px;
       border-radius: 8px;
-      border: 1px solid #2a2a2a;
-      background: #0d0d0d;
-      color: #e0e0e0;
+      border: 1px solid var(--vtc-bg-elev-2);
+      background: var(--vtc-bg);
+      color: var(--vtc-fg);
       font-family: 'SF Mono', 'Consolas', 'Courier New', monospace;
       font-size: 13px;
       line-height: 1.6;
@@ -109,40 +110,40 @@
       outline: none;
       transition: border-color 0.15s;
     }
-    textarea:focus { border-color: #4ecdc4; }
-    textarea::placeholder { color: #444; }
+    textarea:focus { border-color: var(--vtc-accent); }
+    textarea::placeholder { color: var(--vtc-fg-3); }
 
     /* 按钮行 */
     .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
     .btn {
       padding: 8px 16px;
-      border: 1px solid #333; border-radius: 7px;
-      background: linear-gradient(180deg, #222 0%, #1a1a1a 100%);
-      color: #ccc; font-size: 13px; font-weight: 600;
+      border: 1px solid var(--vtc-border); border-radius: 7px;
+      background: linear-gradient(180deg, var(--vtc-bg-elev-2) 0%, var(--vtc-bg-elev) 100%);
+      color: var(--vtc-fg-2); font-size: 13px; font-weight: 600;
       cursor: pointer; transition: all 0.15s; text-align: center;
       white-space: nowrap;
     }
     .btn:hover { transform: translateY(-1px); }
-    .btn-primary { color: #4ecdc4; border-color: #4ecdc4; }
+    .btn-primary { color: var(--vtc-accent); border-color: var(--vtc-accent); }
     .btn-primary:hover {
-      background: linear-gradient(180deg, #1a3a36 0%, #142a26 100%);
-      box-shadow: 0 0 12px rgba(78,205,196,0.2);
+      background: linear-gradient(180deg, var(--vtc-bg-elev-2) 0%, var(--vtc-bg-elev-2) 100%);
+      box-shadow: 0 0 12px var(--vtc-accent-weak);
     }
 
     /* 无 Padding 切换开关 */
     .toggle-wrap {
       display: inline-flex; align-items: center; gap: 6px;
       cursor: pointer; user-select: none;
-      font-size: 12px; color: #555;
+      font-size: 12px; color: var(--vtc-fg-3);
       transition: color 0.15s;
     }
-    .toggle-wrap:hover { color: #aaa; }
+    .toggle-wrap:hover { color: var(--vtc-fg-3); }
     .toggle-wrap input { display: none; }
     .toggle-track {
       width: 34px; height: 18px;
       border-radius: 10px;
-      background: #222;
-      border: 1px solid #333;
+      background: var(--vtc-bg-elev-2);
+      border: 1px solid var(--vtc-border);
       position: relative;
       transition: background 0.2s, border-color 0.2s;
     }
@@ -151,23 +152,23 @@
       position: absolute;
       width: 14px; height: 14px;
       border-radius: 50%;
-      background: #555;
+      background: var(--vtc-fg-4);
       top: 1px; left: 1px;
       transition: all 0.2s;
     }
     .toggle-wrap input:checked + .toggle-track {
-      background: #1a3a36;
-      border-color: #4ecdc4;
+      background: var(--vtc-bg-elev-2);
+      border-color: var(--vtc-accent);
     }
     .toggle-wrap input:checked + .toggle-track::after {
-      background: #4ecdc4;
+      background: var(--vtc-accent);
       left: 17px;
     }
     .toggle-label { font-size: 12px; color: inherit; }
 
     /* 图片上传 */
     .upload-zone {
-      border: 2px dashed #222;
+      border: 2px dashed var(--vtc-bg-elev-2);
       border-radius: 10px;
       padding: 28px;
       text-align: center;
@@ -175,24 +176,24 @@
       transition: all 0.2s;
     }
     .upload-zone:hover {
-      border-color: #4ecdc4;
-      background: #0d1a18;
+      border-color: var(--vtc-accent);
+      background: var(--vtc-bg-elev-2);
     }
     .upload-zone .icon { font-size: 28px; margin-bottom: 4px; }
-    .upload-zone .text { font-size: 14px; color: #666; }
-    .upload-zone .sub { font-size: 12px; color: #444; margin-top: 2px; }
+    .upload-zone .text { font-size: 14px; color: var(--vtc-fg-3); }
+    .upload-zone .sub { font-size: 12px; color: var(--vtc-fg-3); margin-top: 2px; }
     .upload-zone input { display: none; }
 
     .img-preview {
       display: none; align-items: center; gap: 14px;
       padding: 12px; margin-top: 10px;
-      border-radius: 8px; border: 1px solid #1a1a1a; background: #0a0a0a;
+      border-radius: 8px; border: 1px solid var(--vtc-bg-elev); background: var(--vtc-bg);
     }
     .img-preview.show { display: flex; }
     .img-preview img { max-width: var(--container-width); max-height: 100px; border-radius: 6px; }
     .img-preview .info { flex: 1; min-width: 0; }
-    .img-preview .info .name { font-size: 13px; color: #ccc; }
-    .img-preview .info .size { font-size: 11px; color: #555; margin-top: 2px; }
+    .img-preview .info .name { font-size: 13px; color: var(--vtc-fg-2); }
+    .img-preview .info .size { font-size: 11px; color: var(--vtc-fg-3); margin-top: 2px; }
 
     /* Base64 图片预览 */
     .b64-preview {
@@ -204,12 +205,12 @@
       max-width: var(--container-width); max-height: 180px;
       border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     }
-    .b64-preview .invalid { font-size: 13px; color: #ff6b6b; }
+    .b64-preview .invalid { font-size: 13px; color: var(--vtc-danger); }
 
     .toast {
       position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(20px);
-      background: #222; color: #ccc; padding: 10px 24px; border-radius: 8px;
-      border: 1px solid #333; font-size: 13px;
+      background: var(--vtc-bg-elev-2); color: var(--vtc-fg-2); padding: 10px 24px; border-radius: 8px;
+      border: 1px solid var(--vtc-border); font-size: 13px;
       opacity: 0; transition: all 0.3s ease; pointer-events: none; z-index: 100;
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -220,9 +221,8 @@
       textarea { min-height: 100px; }
     }
   </style>
-  <link rel="stylesheet" href="/theme-light.css?v=1"/>
 </head>
-<body>
+<body class="vtc-native">
   <div class="container">
     <a href="/" class="back-link">← 返回工具集</a>
     <div class="header">

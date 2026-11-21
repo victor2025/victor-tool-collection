@@ -21,12 +21,12 @@
     .header { text-align: center; margin-bottom: 24px; }
     .back-link {
       display: inline-flex; align-items: center; gap: 6px;
-      color: #555; text-decoration: none; font-size: 13px;
+      color: #949494; text-decoration: none; font-size: 13px;
       margin-bottom: 10px; transition: color 0.2s;
     }
     .back-link:hover { color: #4ecdc4; }
-    .header h1 { font-size: 24px; font-weight: 700; letter-spacing: 3px; color: #ddd; }
-    .header .sub { font-size: 13px; color: #555; margin-top: 4px; }
+    .header h1 { font-size: 24px; font-weight: 700; letter-spacing: 1px; color: #ddd; }
+    .header .sub { font-size: 13px; color: #949494; margin-top: 4px; }
 
     /* ===== 登录页 ===== */
     #loginScreen {
@@ -37,7 +37,7 @@
       margin-bottom: 14px; text-align: left;
     }
     #loginScreen .input-group label {
-      display: block; font-size: 12px; color: #666; margin-bottom: 4px; letter-spacing: 1px;
+      display: block; font-size: 12px; color: #9e9e9e; margin-bottom: 4px; letter-spacing: 1px;
     }
     #loginScreen .input-group input {
       width: 100%; padding: 10px 14px;
@@ -70,7 +70,7 @@
       font-size: 28px; font-weight: 700; color: #4ecdc4;
     }
     .stat-card .label {
-      font-size: 12px; color: #555; margin-top: 4px; letter-spacing: 1px;
+      font-size: 12px; color: #949494; margin-top: 4px; letter-spacing: 1px;
     }
     .stat-card {
       cursor: grab; user-select: none;
@@ -107,7 +107,7 @@
       padding: 8px 10px; text-align: left; border-bottom: 1px solid #1a1a1a;
     }
     .ip-detail th,
-    .visit-log th { color: #666; font-weight: 400; font-size: 11px; letter-spacing: 1px; }
+    .visit-log th { color: #9e9e9e; font-weight: 400; font-size: 11px; letter-spacing: 1px; }
     .ip-detail td,
     .visit-log td { color: #bbb; }
 
@@ -129,7 +129,7 @@
       display: flex; align-items: center; justify-content: center; gap: 12px;
       margin-top: 12px; flex-wrap: wrap;
     }
-    .pagination .page-info { font-size: 13px; color: #555; }
+    .pagination .page-info { font-size: 13px; color: #949494; }
     .pagination .page-jump { display: flex; align-items: center; gap: 4px; }
     .pagination .page-jump input {
       width: 56px; padding: 4px 8px; text-align: center;
@@ -145,7 +145,7 @@
     .btn {
       display: inline-flex; align-items: center; gap: 4px;
       padding: 6px 14px; border: 1px solid #333; border-radius: 6px;
-      background: transparent; color: #666; font-size: 13px; cursor: pointer;
+      background: transparent; color: #9e9e9e; font-size: 13px; cursor: pointer;
       font-family: inherit; transition: all 0.2s;
     }
     .btn:hover { border-color: #4ecdc4; color: #4ecdc4; }
@@ -165,7 +165,7 @@
     .modal h3 { font-size: 16px; color: #ddd; margin-bottom: 16px; letter-spacing: 1px; }
     .modal .input-group { margin-bottom: 12px; }
     .modal .input-group label {
-      display: block; font-size: 12px; color: #666; margin-bottom: 4px;
+      display: block; font-size: 12px; color: #9e9e9e; margin-bottom: 4px;
     }
     .modal .input-group input {
       width: 100%; padding: 9px 12px;
@@ -228,7 +228,7 @@
     .sys-card .sys-big { font-size: 24px; font-weight: 700; color: #4ecdc4; font-variant-numeric: tabular-nums; }
     .sys-card .sys-big.warn { color: #ffd93d; }
     .sys-card .sys-big.hot { color: #ff6b6b; }
-    .sys-card .sys-meta { font-size: 11px; color: #555; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .sys-card .sys-meta { font-size: 11px; color: #949494; margin-top: 4px; font-variant-numeric: tabular-nums; }
     .meter {
       height: 5px; border-radius: 3px; background: #222; overflow: hidden; margin-top: 8px;
     }
@@ -241,7 +241,7 @@
     .meter-bar.hot { background: linear-gradient(90deg, #ff6b6b, #e04040); }
     .sys-status {
       display: flex; align-items: center; justify-content: space-between;
-      font-size: 12px; color: #555; margin-bottom: 10px;
+      font-size: 12px; color: #949494; margin-bottom: 10px;
     }
     .sys-status .live { color: #4ecdc4; }
     .sys-note {
@@ -326,7 +326,7 @@
           <div class="visit-filters">
             <select id="filterTool"><option value="">全部工具</option></select>
             <input type="date" id="filterStartDate"/>
-            <span style="color:#333;font-size:12px">~</span>
+            <span style="color: #808080;font-size:12px">~</span>
             <input type="date" id="filterEndDate"/>
             <button class="btn" id="labelToggleBtn">🏷 标签模式</button>
             <button class="btn" id="visitSearchBtn">搜索</button>
@@ -655,14 +655,14 @@
     function renderIpDetail(ipDetails) {
       const tbody = document.getElementById('ipBody');
       if (!ipDetails || ipDetails.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#444;padding:30px;">暂无数据</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color: #8a8a8a;padding:30px;">暂无数据</td></tr>';
         return;
       }
       let html = '';
       ipDetails.forEach(detail => {
         Object.entries(detail.tool_count || {}).forEach(([tool, cnt]) => {
           const ua = detail.user_agent ? detail.user_agent.substring(0, 50) + (detail.user_agent.length > 50 ? '...' : '') : '-';
-          html += `<tr><td>${tool}</td><td>${detail.ip}</td><td>${cnt}</td><td>-</td><td style="font-size:11px;color:#666;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${ua}">${ua}</td></tr>`;
+          html += `<tr><td>${tool}</td><td>${detail.ip}</td><td>${cnt}</td><td>-</td><td style="font-size:11px;color: #9e9e9e;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${ua}">${ua}</td></tr>`;
         });
       });
       tbody.innerHTML = html;
@@ -793,7 +793,7 @@
 
       // Render table
       if (visits.length === 0) {
-        visitBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#444;padding:30px;">暂无数据</td></tr>';
+        visitBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color: #8a8a8a;padding:30px;">暂无数据</td></tr>';
       } else {
         var html = '';
         visits.forEach(function(v) {
@@ -808,14 +808,14 @@
           var labelName = label ? label.label : '';
 
           if (showLabel && labelName) {
-            deviceCell = '<span style="color:#4ecdc4;cursor:pointer" title="' + escapeHtml(did) + '" onclick="showLabelEditor(\'' + escapeHtml(did) + '\',\'' + escapeHtml(labelName) + '\')">' + escapeHtml(labelName) + ' <span style="font-size:10px;color:#555">✎</span></span>';
+            deviceCell = '<span style="color:#4ecdc4;cursor:pointer" title="' + escapeHtml(did) + '" onclick="showLabelEditor(\'' + escapeHtml(did) + '\',\'' + escapeHtml(labelName) + '\')">' + escapeHtml(labelName) + ' <span style="font-size:10px;color: #949494">✎</span></span>';
           } else if (showLabel && !labelName) {
-            deviceCell = '<span style="color:#666;cursor:pointer" title="点击添加标签" onclick="showLabelEditor(\'' + escapeHtml(did) + '\',\'\')">' + (did ? did.substring(0,12)+'…' : '-') + ' <span style="font-size:10px;color:#444">🏷</span></span>';
+            deviceCell = '<span style="color: #9e9e9e;cursor:pointer" title="点击添加标签" onclick="showLabelEditor(\'' + escapeHtml(did) + '\',\'\')">' + (did ? did.substring(0,12)+'…' : '-') + ' <span style="font-size:10px;color: #8a8a8a">🏷</span></span>';
           } else {
             deviceCell = '<span style="cursor:pointer" onclick="showLabelEditor(\'' + escapeHtml(did) + '\',\'' + escapeHtml(labelName) + '\')" title="' + (labelName ? labelName : '点击添加标签') + '">' + (did ? did.substring(0,12)+'…' : '-') + '</span>';
           }
 
-          html += '<tr><td>' + v.id + '</td><td>' + v.ip + '</td><td>' + v.tool + '</td><td style="font-size:11px;color:#666;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(v.user_agent || '') + '">' + ua + '</td><td>' + deviceCell + '</td><td>' + time + '</td></tr>';
+          html += '<tr><td>' + v.id + '</td><td>' + v.ip + '</td><td>' + v.tool + '</td><td style="font-size:11px;color: #9e9e9e;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(v.user_agent || '') + '">' + ua + '</td><td>' + deviceCell + '</td><td>' + time + '</td></tr>';
         });
         visitBody.innerHTML = html;
       }
