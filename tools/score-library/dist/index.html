@@ -5,53 +5,28 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>乐谱夹</title>
-  <link rel="stylesheet" href="/theme-light.css?v=1"/>
+  <link rel="stylesheet" href="/shared/vtc.css?v=1"/>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    /* 主题变量派生自 /shared/vtc.css（暗/亮两套真实色板），这里只保留乐谱夹内部的语义别名 */
     :root {
-      --title-top: 30px; --container-width: 1100px;
-      --bg: #000; --glow: rgba(255,255,255,.015);
-      --fg: #e0e0e0; --fg-strong: #dddddd;
-      --muted: #555; --muted-2: #888; --muted-3: #444;
-      --surface: #0d0d0d; --surface-2: #101010; --surface-3: #141414; --surface-hover: #1c1c1c;
-      --border: #222; --border-2: #1d1d1d; --border-3: #2b2b2b;
-      --input-bg: #080808;
-      --accent: #4ecdc4; --accent-strong: #7fe3da;
-      --accent-bg: linear-gradient(180deg, #1d3b38 0%, #142b29 100%);
-      --accent-border: #23514d;
-      --danger: #ff6b6b; --danger-border: #4a2020; --danger-bg: #221010;
-      --shadow: 0 8px 24px rgba(0,0,0,.5);
-      --shadow-lg: 0 24px 70px rgba(0,0,0,.75);
-      --mask: rgba(0,0,0,.8); --viewer-mask: rgba(0,0,0,.94);
-      --toast-bg: #16221f; --toast-border: #24403b; --toast-fg: #8fe8df;
-      --toast-bad-bg: #241414; --toast-bad-border: #4a2323; --toast-bad-fg: #ff9d9d;
+      --title-top: var(--vtc-title-top); --container-width: 1100px;
+      --bg: var(--vtc-bg); --glow: var(--vtc-glow);
+      --fg: var(--vtc-fg); --fg-strong: var(--vtc-fg);
+      --muted: var(--vtc-fg-4); --muted-2: var(--vtc-fg-3); --muted-3: var(--vtc-fg-4);
+      --surface: var(--vtc-bg-elev); --surface-2: var(--vtc-bg-elev);
+      --surface-3: var(--vtc-bg-elev-2); --surface-hover: var(--vtc-bg-elev-2);
+      --border: var(--vtc-border); --border-2: var(--vtc-border-soft); --border-3: var(--vtc-border);
+      --input-bg: var(--vtc-bg-elev);
+      --accent: var(--vtc-accent); --accent-strong: var(--vtc-accent);
+      --accent-bg: var(--vtc-accent-weak); --accent-border: var(--vtc-accent-border);
+      --danger: var(--vtc-danger); --danger-border: var(--vtc-danger-border); --danger-bg: var(--vtc-danger-weak);
+      --shadow: var(--vtc-shadow); --shadow-lg: var(--vtc-shadow);
+      --mask: var(--vtc-mask); --viewer-mask: var(--vtc-mask-strong);
+      --toast-bg: var(--vtc-accent-weak); --toast-border: var(--vtc-accent-border); --toast-fg: var(--vtc-accent);
+      --toast-bad-bg: var(--vtc-danger-weak); --toast-bad-border: var(--vtc-danger-border); --toast-bad-fg: var(--vtc-danger);
     }
-
-    html[data-theme="light"] {
-      --bg: #f5f6f8; --glow: rgba(0,0,0,.02);
-      --fg: #1b1f24; --fg-strong: #111418;
-      --muted: #6b7280; --muted-2: #4b5563; --muted-3: #6b7280;
-      --surface: #fff; --surface-2: #fff; --surface-3: #f0f2f5; --surface-hover: #eef1f4;
-      --border: #dfe3e8; --border-2: #e6e9ee; --border-3: #cfd6dd;
-      --input-bg: #fff;
-      --accent: #0f9d94; --accent-strong: #0b7a73;
-      --accent-bg: linear-gradient(180deg, #e6f7f5 0%, #d8f0ed 100%);
-      --accent-border: #a8ddd7;
-      --danger: #d64545; --danger-border: #f0c9c9; --danger-bg: #fdf1f1;
-      --shadow: 0 8px 24px rgba(16,24,40,.10);
-      --shadow-lg: 0 24px 70px rgba(16,24,40,.18);
-      --mask: rgba(17,20,24,.45); --viewer-mask: rgba(17,20,24,.9);
-      --toast-bg: #e6f7f5; --toast-border: #a8ddd7; --toast-fg: #0b7a73;
-      --toast-bad-bg: #fdf1f1; --toast-bad-border: #f0c9c9; --toast-bad-fg: #b52d2d;
-    }
-
-    html[data-theme="light"] img,
-    html[data-theme="light"] iframe,
-    html[data-theme="light"] video,
-    html[data-theme="light"] canvas { filter: none; }
-
-    html[data-theme="light"] body { filter: none; background: var(--bg); color: var(--fg); }
 
     body {
       min-height: 100vh; background: var(--bg); color: var(--fg);
@@ -112,10 +87,9 @@
     .thumb .noimg { font-size: 34px; opacity: .5; }
     .pages-badge {
       position: absolute; right: 10px; top: 10px;
-      background: rgba(0,0,0,.62); color: #fff; font-size: 11px;
+      background: var(--vtc-mask); color: var(--vtc-on-mask); font-size: 11px;
       padding: 3px 8px; border-radius: 20px; letter-spacing: .5px;
     }
-    html[data-theme="light"] .pages-badge { background: rgba(17,20,24,.62); }
 
     .card-body { padding: 12px 13px 13px; }
     .card .title {
@@ -212,7 +186,7 @@
     .stage { display: flex; flex-direction: column; align-items: center; min-height: 100%; gap: 10px; }
     .stage img.sheet {
       display: block; max-width: 100%; height: auto; border-radius: 6px; background: #fff;
-      box-shadow: 0 10px 40px rgba(0,0,0,.45);
+      box-shadow: var(--vtc-shadow);
     }
     .stage .loading { color: var(--muted-2); font-size: 14px; padding: 60px; }
 
@@ -301,7 +275,7 @@
     }
   </style>
 </head>
-<body>
+<body class="vtc-native">
 <div class="container">
   <div class="header">
     <h1>🎼 乐谱夹</h1>

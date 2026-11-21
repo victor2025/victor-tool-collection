@@ -6,10 +6,10 @@
   width: 100px;
   height: 140px;
   border-radius: 10px;
-  background: linear-gradient(180deg, #1c1c1c 0%, #151515 50%, #1c1c1c 100%);
-  border: 1px solid #2a2a2a;
+  background: linear-gradient(180deg, var(--vtc-bg-elev) 0%, var(--vtc-bg-elev) 50%, var(--vtc-bg-elev) 100%);
+  border: 1px solid var(--vtc-bg-elev-2);
   box-shadow:
-    0 4px 15px rgba(0, 0, 0, 0.6),
+    0 4px 15px var(--vtc-mask),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   perspective: 600px;
   font-family: 'Orbitron', 'Courier New', monospace;
@@ -57,13 +57,13 @@
 
 .dh-top {
   top: 0;
-  background: linear-gradient(180deg, #202020 0%, #1a1a1a 100%);
+  background: linear-gradient(180deg, var(--vtc-bg-elev-2) 0%, var(--vtc-bg-elev) 100%);
   border-radius: 10px 10px 0 0;
 }
 
 .dh-bottom {
   bottom: 0;
-  background: linear-gradient(180deg, #141414 0%, #181818 100%);
+  background: linear-gradient(180deg, var(--vtc-bg-elev) 0%, var(--vtc-bg-elev-2) 100%);
   border-radius: 0 0 10px 10px;
 }
 
@@ -72,10 +72,10 @@
   font-size: 100px;
   font-weight: 900;
   line-height: 140px;
-  color: #f0f0f0;
+  color: var(--vtc-fg);
   text-shadow:
-    0 0 8px rgba(240, 240, 240, 0.12),
-    0 0 16px rgba(240, 240, 240, 0.04);
+    0 0 8px var(--vtc-accent-weak),
+    0 0 16px var(--vtc-accent-weak);
   user-select: none;
 }
 
@@ -105,14 +105,14 @@
   justify-content: center;
   align-items: flex-start;
   backface-visibility: hidden;
-  background: #1a1a1a;
+  background: var(--vtc-bg-elev);
 }
 
 /* 上半翻页卡：旧数字翻下去 */
 .flip-card-top {
   top: 0;
   transform-origin: bottom center;
-  background: linear-gradient(180deg, #202020 0%, #1a1a1a 100%);
+  background: linear-gradient(180deg, var(--vtc-bg-elev-2) 0%, var(--vtc-bg-elev) 100%);
   border-radius: 10px 10px 0 0;
   animation: foldTop 0.22s ease-in forwards;
 }
@@ -126,7 +126,7 @@
   bottom: 0;
   transform-origin: top center;
   transform: rotateX(90deg);
-  background: linear-gradient(180deg, #141414 0%, #181818 100%);
+  background: linear-gradient(180deg, var(--vtc-bg-elev) 0%, var(--vtc-bg-elev-2) 100%);
   border-radius: 0 0 10px 10px;
   animation: foldBottom 0.22s ease-out 0.22s forwards;
 }

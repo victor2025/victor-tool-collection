@@ -102,17 +102,17 @@
 
 #### 迁移状态（2026-11）
 
-已迁到真实色板（`<body class="vtc-native">`，`theme-light.css` 的 invert 会自动跳过）：
+全站页面已全部使用 `--vtc-*` 变量（`<body class="vtc-native">`），不再有页面依赖 `theme-light.css` 的整页反相：
 
-`url-encode`、`timestamp`、`base64`、`escape`、`json-formatter`、`jwt-decoder`、`regex`、`qrcode`、`image-obfuscator`、`typhoon`、`webshell`
+首页 `nav`、`url-encode`、`timestamp`、`base64`、`escape`、`json-formatter`、`jwt-decoder`、`regex`、`qrcode`、`image-obfuscator`、`typhoon`、`webshell`、`admin`、`score-library`、`score-board`
 
-仍走 invert 兜底（需单独设计浅色方案，不能机械替换）：
+`nav/theme-light.css` 仅保留为缓存页面的兼容兜底，新页面**不要**再引用它。
 
-| 页面 | 原因 |
-|---|---|
-| `admin` | 图表颜色写在 JS 里（26 处），canvas 不认 CSS 变量，需改成 `getComputedStyle` 读变量 |
-| `score-library` / `score-board` | 图表 + iframe 记分板，同 admin 问题 |
-| `nav` | 首页自带两套手写色板（68 条 `data-theme` 规则），并非反相方案，可后续单独重构 |
+**三条迁移经验（新工具照抄即可）：**
+
+1. 页面 `<body>` 必须带 `vtc-native`，颜色只用 `var(--vtc-*)`，不留任何十六进制字面色
+2. 页面内部的语义别名（如乐谱夹的 `--surface` / `--muted`）写成 `var(--vtc-bg-elev)` 这样的派生关系，不要重新定义一套亮/暗色板
+3. canvas（Chart.js 等）不认 CSS 变量：用 `getComputedStyle(document.documentElement).getPropertyValue('--vtc-x')` 取值，并在 `vtc-theme-change` 事件里重建图表（参考 `tools/admin/dist/index.html`）
 
 #### 迁移工具
 

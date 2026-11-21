@@ -29,7 +29,7 @@
 }
 
 body {
-  background: #000;
+  background: var(--vtc-bg);
   min-height: 100vh;
   display: flex;
   justify-content: center;
@@ -45,10 +45,10 @@ body {
   align-items: center;
   padding: 20px;
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.02) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 0%, var(--vtc-glow) 0%, transparent 60%),
     radial-gradient(ellipse at 80% 20%, rgba(78, 205, 196, 0.03) 0%, transparent 50%),
     radial-gradient(ellipse at 20% 80%, rgba(255, 107, 107, 0.03) 0%, transparent 50%),
-    #000;
+    var(--vtc-bg);
 }
 
 /* ===== 返回链接 ===== */
@@ -59,13 +59,13 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #555;
+  color: var(--vtc-fg-4);
   text-decoration: none;
   font-size: 13px;
   z-index: 100;
   transition: color 0.2s;
 }
-.back-link:hover { color: #4ecdc4; }
+.back-link:hover { color: var(--vtc-accent); }
 
 @media (max-width: 600px) {
   .back-link { top: 12px; left: 12px; font-size: 12px; }

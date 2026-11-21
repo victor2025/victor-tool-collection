@@ -31,6 +31,7 @@ html[data-theme="dark"] {
   --vtc-accent: #4ecdc4;
   --vtc-accent-weak: rgba(78, 205, 196, 0.12);
   --vtc-warn: #ffd93d;
+  --vtc-warn-weak: rgba(255, 217, 61, 0.12);
   --vtc-danger: #ff6b6b;
   --vtc-ok: #66bb6a;
 
@@ -48,6 +49,22 @@ html[data-theme="dark"] {
   --vtc-radius-sm: 6px;
   --vtc-gap: 12px;
   --vtc-title-top: 30px;  /* 与 AGENTS.md 的标题顶部边距规范一致 */
+  /* 阴影 / 遮罩 / 光晕 */
+  --vtc-glow: rgba(255, 255, 255, 0.015);
+  --vtc-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --vtc-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.3);
+  --vtc-shadow-accent: 0 4px 12px rgba(78, 205, 196, 0.06);
+  --vtc-mask: rgba(0, 0, 0, 0.8);
+  --vtc-mask-strong: rgba(0, 0, 0, 0.94);
+  --vtc-on-mask: #ffffff;  /* 遮罩上的文字，两套主题都保持浅色 */
+  --vtc-danger-weak: #221010;
+  --vtc-danger-border: #4a2323;
+
+  /* 分类着色（首页工具卡片的 dev / fun / life 标签） */
+  --vtc-cat-dev-bg: #2a2820;  --vtc-cat-dev-fg: #ffd93d;
+  --vtc-cat-fun-bg: #1a2a28;  --vtc-cat-fun-fg: #4ecdc4;
+  --vtc-cat-life-bg: #1a282a; --vtc-cat-life-fg: #66ccee;
+
 }
 
 html[data-theme="light"] {
@@ -65,6 +82,7 @@ html[data-theme="light"] {
   --vtc-accent: #0d857e;  /* 在白底上仍满足 AA 的深青色 */
   --vtc-accent-weak: rgba(13, 133, 126, 0.10);
   --vtc-warn: #8a6d00;
+  --vtc-warn-weak: rgba(138, 109, 0, 0.10);
   --vtc-danger: #c02626;
   --vtc-ok: #217a3c;
 
@@ -76,6 +94,18 @@ html[data-theme="light"] {
   --vtc-syn-alt: #6d4b9e;
   --vtc-code-bg: #f3f4f6;
   --vtc-accent-border: rgba(13, 133, 126, 0.36);
+  --vtc-glow: rgba(15, 23, 42, 0.03);
+  --vtc-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  --vtc-shadow-sm: 0 1px 4px rgba(15, 23, 42, 0.06);
+  --vtc-shadow-accent: 0 4px 12px rgba(15, 157, 148, 0.08);
+  --vtc-mask: rgba(17, 20, 24, 0.45);
+  --vtc-mask-strong: rgba(17, 20, 24, 0.9);
+  --vtc-danger-weak: #fdf1f1;
+  --vtc-danger-border: #f0c9c9;
+
+  --vtc-cat-dev-bg: #fdf6e3;  --vtc-cat-dev-fg: #b7791f;
+  --vtc-cat-fun-bg: #e6f7f4;  --vtc-cat-fun-fg: #0f766e;
+  --vtc-cat-life-bg: #e8f4f9; --vtc-cat-life-fg: #0369a1;
 }
 
 /* ========== 基础排版 ========== */
