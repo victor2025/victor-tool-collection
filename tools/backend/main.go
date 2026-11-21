@@ -2,6 +2,9 @@ package main
 
 import (
 	"log"
+	"os"
+	"time"
+
 	"victor-tool-collection/backend/config"
 	"victor-tool-collection/backend/database"
 	"victor-tool-collection/backend/handlers"
@@ -30,6 +33,14 @@ func main() {
 
 	// Seed default admin if none exists
 	seedAdmin(db)
+
+	// 历史明文密码升级为 bcrypt（幂等，已是哈希时直接跳过）
+	if err := handlers.MigrateAdminPassword(db); err != nil {
+		log.Printf("MigrateAdminPassword: %v", err)
+	}
+
+	// 清理过期会话
+	db.Where("expires_at < ?", time.Now()).Delete(&models.Session{})
 
 	// Set up Gin
 	gin.SetMode(gin.ReleaseMode)
@@ -76,8 +87,14 @@ func main() {
 		scoreWrite.DELETE("/scores/images/:imageId", scoreHandler.DeleteImage)
 	}
 
-	log.Printf("Listening on :%s", cfg.ServerPort)
-	if err := router.Run(":" + cfg.ServerPort); err != nil {
+	// 只监听回环地址：外部统一走 nginx 反代，避免绕过限流/安全头直连 8003。
+	// 需要对外监听时可用 VTC_LISTEN 覆盖（例如 0.0.0.0:8003，仅用于排障）。
+	addr := "127.0.0.1:" + cfg.ServerPort
+	if v := os.Getenv("VTC_LISTEN"); v != "" {
+		addr = v
+	}
+	log.Printf("Listening on %s", addr)
+	if err := router.Run(addr); err != nil {
 		log.Fatalf("Run: %v", err)
 	}
 }
@@ -88,6 +105,16 @@ func seedAdmin(db *gorm.DB) {
 	if count > 0 {
 		return
 	}
-	db.Create(&models.Admin{Password: "admin888"})
-	log.Println("Default admin created (password: admin888)")
+
+	// 初始密码可用 VTC_INITIAL_PASSWORD 指定，默认 admin888（文档记录，不写日志）
+	initial := os.Getenv("VTC_INITIAL_PASSWORD")
+	if initial == "" {
+		initial = "admin888"
+	}
+	hashed, err := handlers.HashPassword(initial)
+	if err != nil {
+		log.Fatalf("seedAdmin: %v", err)
+	}
+	db.Create(&models.Admin{Password: hashed})
+	log.Println("默认管理员已创建（密码以 bcrypt 存储），请尽快在 /admin 修改")
 }

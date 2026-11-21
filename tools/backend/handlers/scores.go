@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -56,15 +57,15 @@ func scoreJSON(s models.Score) gin.H {
 		})
 	}
 	return gin.H{
-		"id":         s.ID,
-		"title":      s.Title,
-		"composer":   s.Composer,
-		"type":       s.Type,
-		"note":       s.Note,
-		"created_at": s.CreatedAt,
-		"images":     imgs,
+		"id":          s.ID,
+		"title":       s.Title,
+		"composer":    s.Composer,
+		"type":        s.Type,
+		"note":        s.Note,
+		"created_at":  s.CreatedAt,
+		"images":      imgs,
 		"image_count": len(imgs),
-		"cover":      firstImageURL(s.Images),
+		"cover":       firstImageURL(s.Images),
 	}
 }
 
@@ -369,6 +370,11 @@ func (h *ScoreHandler) addImageURL(scoreID uint, raw string, order int) (models.
 
 // mirrorRemote downloads a remote image into the local store.
 func (h *ScoreHandler) mirrorRemote(raw string) (string, error) {
+	u, uerr := url.Parse(raw)
+	if uerr != nil || u == nil || isBlockedHost(u.Host) {
+		return "", fmt.Errorf("不允许的图片来源")
+	}
+
 	client := &http.Client{Timeout: 25 * time.Second}
 	req, err := http.NewRequest(http.MethodGet, raw, nil)
 	if err != nil {
@@ -387,12 +393,14 @@ func (h *ScoreHandler) mirrorRemote(raw string) (string, error) {
 		return "", fmt.Errorf("源站返回 %d", resp.StatusCode)
 	}
 
-	ext := extByMime[strings.ToLower(strings.TrimSpace(strings.Split(resp.Header.Get("Content-Type"), ";")[0]))]
+	ct := strings.ToLower(strings.TrimSpace(strings.Split(resp.Header.Get("Content-Type"), ";")[0]))
+	ext := extByMime[ct]
 	if ext == "" {
-		ext = filepath.Ext(strings.Split(raw, "?")[0])
+		ext = strings.ToLower(filepath.Ext(strings.Split(raw, "?")[0]))
 	}
+	// 源站声明的类型和链接后缀都不是图片时直接拒绝，不再兜底成 .jpg
 	if !allowedImageExts[ext] {
-		ext = ".jpg"
+		return "", fmt.Errorf("源站返回的不是图片")
 	}
 
 	if err := os.MkdirAll(h.Dir, 0o755); err != nil {
@@ -477,9 +485,12 @@ func (h *ScoreHandler) removeLocalFile(stored string) {
 		return
 	}
 	p := filepath.Join(h.Dir, filepath.Base(stored))
-	if strings.HasPrefix(filepath.Clean(p), filepath.Clean(h.Dir)) {
-		os.Remove(p)
+	// 用 Rel 判断是否真的落在数据目录内，避免字符串前缀误判（例如 /data/scores2）
+	rel, err := filepath.Rel(h.Dir, p)
+	if err != nil || rel == "." || strings.HasPrefix(rel, "..") {
+		return
 	}
+	os.Remove(p)
 }
 
 /* ------------------------------------------------------------------ */
@@ -504,3 +515,24 @@ func randomScoreName(ext string) string {
 	return hex.EncodeToString(b) + ext
 }
 
+// isBlockedHost 拒绝解析到本机 / 内网地址的主机，防止"导入图片链接"被当作 SSRF 跳板。
+// 解析失败也一并拒绝（下载本来也不会成功）。
+func isBlockedHost(hostport string) bool {
+	host := hostport
+	if h, _, err := net.SplitHostPort(hostport); err == nil {
+		host = h
+	}
+	if host == "" || strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ips, err := net.LookupIP(host)
+	if err != nil || len(ips) == 0 {
+		return true
+	}
+	for _, ip := range ips {
+		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() {
+			return true
+		}
+	}
+	return false
+}

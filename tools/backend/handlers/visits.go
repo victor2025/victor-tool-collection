@@ -17,33 +17,40 @@ type VisitHandler struct {
 }
 
 // LogVisitRequest is the JSON body for logging a visit.
+// 注意：不再接受客户端上报的 IP，来源 IP 一律以 nginx 写入的 X-Real-IP 为准。
 type LogVisitRequest struct {
-	IP       string `json:"ip"`
 	Tool     string `json:"tool"`
 	DeviceID string `json:"device_id"`
 }
 
+// 单 IP 上报限流：10 秒内最多 10 次，防止刷库把 SD 卡写满。
+var visitLimiter = newRateLimiter(10*time.Second, 10)
+
 // LogVisit records an IP + tool visit with dedup (1s window).
 // POST /api/visit
 func (h *VisitHandler) LogVisit(c *gin.Context) {
+	ip := clientIP(c)
+	if ok, wait := visitLimiter.Allow(ip); !ok {
+		c.Header("Retry-After", strconv.Itoa(int(wait.Seconds())+1))
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many visits"})
+		return
+	}
+
 	var req LogVisitRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		req.Tool = "unknown"
 	}
-	if req.IP == "" {
-		req.IP = c.GetHeader("X-Real-IP")
-		if req.IP == "" {
-			req.IP = c.GetHeader("X-Forwarded-For")
-		}
-		if req.IP == "" {
-			req.IP = c.ClientIP()
-		}
+
+	req.Tool = sanitizeTag(req.Tool, 32)
+	if req.Tool == "" {
+		req.Tool = "unknown"
 	}
+	req.DeviceID = sanitizeTag(req.DeviceID, 64)
 
 	// 同一 IP + 工具 + 设备 1 秒内去重
 	var recent int64
 	h.DB.Model(&models.Visit{}).
-		Where("ip = ? AND tool = ? AND device_id = ? AND visited_at > ?", req.IP, req.Tool, req.DeviceID, time.Now().Add(-1*time.Second)).
+		Where("ip = ? AND tool = ? AND device_id = ? AND visited_at > ?", ip, req.Tool, req.DeviceID, time.Now().Add(-1*time.Second)).
 		Count(&recent)
 	if recent > 0 {
 		c.JSON(http.StatusOK, gin.H{"message": "visit deduped"})
@@ -51,9 +58,9 @@ func (h *VisitHandler) LogVisit(c *gin.Context) {
 	}
 
 	visit := models.Visit{
-		IP:        req.IP,
+		IP:        ip,
 		Tool:      req.Tool,
-		UserAgent: c.GetHeader("User-Agent"),
+		UserAgent: sanitizeTag(c.GetHeader("User-Agent"), 500),
 		DeviceID:  req.DeviceID,
 		VisitedAt: time.Now(),
 	}
@@ -64,6 +71,25 @@ func (h *VisitHandler) LogVisit(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "visit logged", "id": visit.ID})
+}
+
+// sanitizeTag 只保留可打印的字母数字与少量符号，并截断到 max 长度，
+// 避免任意内容（含控制字符）写进数据库。
+func sanitizeTag(s string, max int) string {
+	out := make([]byte, 0, len(s))
+	for i := 0; i < len(s) && len(out) < max; i++ {
+		ch := s[i]
+		switch {
+		case ch >= 'a' && ch <= 'z',
+			ch >= 'A' && ch <= 'Z',
+			ch >= '0' && ch <= '9',
+			ch == '-' || ch == '_' || ch == '.' || ch == '/':
+			out = append(out, ch)
+		case ch == ' ':
+			out = append(out, '-')
+		}
+	}
+	return string(out)
 }
 
 // StatsResponse holds the aggregated statistics.
@@ -251,6 +277,3 @@ func (h *VisitHandler) GetVisits(c *gin.Context) {
 		"tools": tools,
 	})
 }
-
-
-
