@@ -13,7 +13,13 @@ victor-tool-collection/
 │   └── ...                  # 其他工具
 ├── deploy/
 │   ├── nginx/               # Nginx 配置
-│   │   └── port-8001.conf
+│   │   ├── port-8001.conf           # 站点配置（已含安全头 include 与限流）
+│   │   ├── 00-vtc-limits.conf       # limit_req_zone / map（http 上下文）
+│   │   ├── 10-vtc-gzip.conf         # 压缩类型（CSS/JS/JSON/SVG）
+│   │   └── vtc-security-headers.conf # 安全响应头片段（每个 location include）
+│   ├── apply-p0.sh          # P0 安全加固一键安装脚本（sudo）
+│   ├── deploy.sh            # 日常部署：测试 + 编译 + 同步配置 + 重启
+│   ├── backup.sh            # 数据库与乐谱图片备份（cron 每日调用）
 │   └── README.md
 ```
 
@@ -107,7 +113,9 @@ Go 后端提供认证鉴权、访问统计、数据查询等功能。
 
 ### 首次启动
 
-首次启动时自动创建数据表并写入默认管理员密码 `admin888`。**请登录管理后台后立即修改密码。**
+首次启动时自动创建数据表并写入默认管理员账号，密码以 **bcrypt 哈希**存储；初始密码可用环境变量 `VTC_INITIAL_PASSWORD` 指定，默认 `admin888`（不会再打印到日志）。**请登录管理后台后立即修改，新密码至少 8 位。**
+
+历史遗留的明文密码会在服务启动时自动升级为 bcrypt 哈希（幂等，已升级则跳过）。
 
 ### API 接口
 
@@ -116,7 +124,7 @@ Go 后端提供认证鉴权、访问统计、数据查询等功能。
 | `/api/login` | POST | 无 | 登录，设置 `vtc_session` cookie |
 | `/api/logout` | POST | 无 | 退出，删除服务端 session |
 | `/api/check-session` | GET | Cookie | 验证 session 是否有效 |
-| `/api/visit` | POST | 无 | 记录访问（body: `{"tool":"...","device_id":"..."}`） |
+| `/api/visit` | POST | 无 | 记录访问（body: `{"tool":"...","device_id":"..."}`，来源 IP 取自 nginx 的 `X-Real-IP`，单 IP 限流） |
 | `/api/stats` | GET | Cookie | 访问统计 |
 | `/api/visits` | GET | Cookie | 分页访问记录（支持 `page`, `page_size`, `tool`, `show_label` 参数） |
 | `/api/device-labels` | GET | Cookie | 列出所有设备标签 |
@@ -130,7 +138,7 @@ Go 后端提供认证鉴权、访问统计、数据查询等功能。
 | 表名 | 说明 |
 |------|------|
 | `visits` | 访问记录（id, ip, tool, user_agent, device_id, visited_at） |
-| `admins` | 管理员密码（id, password, created_at, updated_at） |
+| `admins` | 管理员密码（id, password（bcrypt 哈希）, created_at, updated_at） |
 | `sessions` | 登录会话（id, token, created_at, expires_at） |
 | `device_labels` | 设备标签（id, device_id, label, created_at, updated_at） |
 
@@ -177,6 +185,7 @@ psql -d vtc -c "SELECT tool, COUNT(*) AS visits FROM visits GROUP BY tool ORDER 
 - 端口：8001
 - 根目录：`nav/`（导航页）
 - 各工具通过 `/tool-name/` 路径访问
+- 公共样式通过 `/shared/` 直出仓库 `shared/` 目录（`/shared/vtc.css`）
 - API 请求 `/api/` 代理到 Go Backend（127.0.0.1:8003）
 - 添加新工具时记得加上 `sub_filter` 两行以启用访问跟踪
 
@@ -186,4 +195,105 @@ psql -d vtc -c "SELECT tool, COUNT(*) AS visits FROM visits GROUP BY tool ORDER 
 
 ```bash
 sudo nginx -t && sudo nginx -s reload
+```
+
+> 注意：仓库里的 `deploy/nginx/port-8001.conf` 是**唯一基线**，线上文件必须由它同步过去，不要反向手改线上文件，否则会再次出现两端漂移。
+
+---
+
+## 安全加固（P0）
+
+一次性的安全基线，安装方式：
+
+```bash
+sudo bash deploy/apply-p0.sh
+```
+
+脚本做了什么：
+
+| 项 | 实现 |
+|---|---|
+| 管理员密码 | bcrypt 哈希存储（cost 10），启动时自动把历史明文升级；改密最少 8 位，改密后失效其它会话 |
+| 登录限流 | nginx `vtc_login`（10r/m，burst 5）+ 后端进程内限流（10 分钟 8 次），超限返回 429 |
+| 访问上报限流 | nginx `vtc_visit`（60r/m，burst 20）+ 后端 10 秒 10 次，防止刷库写满 SD 卡 |
+| 终端限流 | `vtc_term` 限制 `/webshell/term/` 握手（30r/m，burst 5） |
+| API 限流 | `vtc_api` 兜底 120r/m（burst 20） |
+| 会话 Cookie | `HttpOnly` + `SameSite=Lax`，仅当请求走 HTTPS（看 `X-Forwarded-Proto`）时附带 `Secure` |
+| 过期会话 | 登录时与启动时清理 `sessions` 表过期记录 |
+| 安全响应头 | `X-Content-Type-Options`、`X-Frame-Options: SAMEORIGIN`、`frame-ancestors 'self'`、`Referrer-Policy`、`Permissions-Policy`（相机仅允许自身）、HTTPS 下的 HSTS |
+| 回环监听 | 后端改为监听 `127.0.0.1:8003`，外部只能经 nginx；排障时可用 `VTC_LISTEN=0.0.0.0:8003` 临时覆盖 |
+
+装完后的验证清单：
+
+```bash
+# 1) 后端仍健康、且只监听回环
+ss -lntp | grep 8003
+curl -s http://127.0.0.1:8003/api/health
+
+# 2) 密码已变 bcrypt
+psql -d vtc -At -c "select left(password, 4) from admins;"
+
+# 3) 登录限流生效（连续 6 次后应出现 429）
+for i in $(seq 1 7); do curl -s -o /dev/null -w "%{http_code} " -X POST \
+  -H 'Content-Type: application/json' -d '{"password":"wrong"}' \
+  http://127.0.0.1:8001/api/login; done; echo
+
+# 4) 安全头
+curl -sI http://127.0.0.1:8001/ | grep -Ei "x-frame|x-content|referrer|frame-ancestors"
+```
+
+---
+
+## 日常部署
+
+```bash
+bash deploy/deploy.sh                # 前后端常规发布
+bash deploy/deploy.sh --scoreboard   # 顺带重建记分板（npm ci + build）
+```
+
+脚本流程：`go test` → `go build` → 按需同步 nginx 片段（有不一致才覆盖）→ `nginx -t` → reload → 重启后端。
+任何一步失败即中止，不会带着半成品 reload。
+
+修改静态工具的 `dist/index.html` 不需要跑脚本，nginx `try_files` 直接读文件；只有改 nginx 配置、后端 Go 代码、或 score-board 源码时才需要。
+
+---
+
+## 备份
+
+`deploy/backup.sh` 每次产出两份文件到 `~/backups/vtc/`：
+
+| 文件 | 内容 |
+|---|---|
+| `vtc-db-<时间戳>.dump` | PostgreSQL 自定义格式全库备份（`pg_restore -l` 校验通过才算成功） |
+| `vtc-scores-<时间戳>.tar.gz` | `data/scores` 乐谱图片 |
+
+默认保留最近 7 份，可用 `OUT=` / `KEEP=` 覆盖。
+
+已安装的定时任务（`crontab -l` 可见）：
+
+```
+40 3 * * * cd /home/pi/projects/Frontend/victor-tool-collection && /bin/bash deploy/backup.sh >> /home/pi/backups/vtc/backup.log 2>&1
+```
+
+恢复示例：
+
+```bash
+# 数据库
+pg_restore -h /var/run/postgresql -U vtc -d vtc --clean --if-exists ~/backups/vtc/vtc-db-YYYYmmdd-HHMMSS.dump
+
+# 乐谱图片
+tar xzf ~/backups/vtc/vtc-scores-YYYYmmdd-HHMMSS.tar.gz -C ~/projects/Frontend/victor-tool-collection/data
+```
+
+> 备份与源数据在同一块 SD 卡上，能防"误删/写坏"，但防不了整卡损坏。真正要紧的话，把 `~/backups/vtc` 定期同步到外部存储或对象存储。
+
+---
+
+## 压缩
+
+`10-vtc-gzip.conf` 把 CSS / JS / JSON / SVG 纳入 gzip（系统默认只压 `text/html`）。
+安装位置 `/etc/nginx/conf.d/10-vtc-gzip.conf`，由 `deploy.sh` 自动同步。验证：
+
+```bash
+curl -sI -H 'Accept-Encoding: gzip' http://127.0.0.1:8001/base64/ | grep -i content-encoding
 ```

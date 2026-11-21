@@ -1,10 +1,14 @@
 node_modules/
+
+# 构建产物：React 打包输出不入库（纯静态工具的 dist/ 是源码，需要入库）
 /tools/score-board/dist/
-/tools/url-encode/dist/
+
 *.log
 .DS_Store
 .vscode/
 .idea/
+
+# 运行时数据与本地配置
 data/
 tools/backend/backend
 tools/backend/victor-backend
