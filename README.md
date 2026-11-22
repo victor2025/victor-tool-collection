@@ -12,7 +12,7 @@
 - 多 Tab 模式：每个工具独立 iframe，切换只显隐不重载，Tab 可拖拽排序并持久化
 - 收藏夹、列表/方格视图、分类筛选、实时搜索
 - **主题切换**：右上角按钮在黑暗 / 明亮主题间切换，选择写入 `localStorage`（键名 `vtc_theme`），刷新与重开页面后保持。
-- **全局生效**：工具页通过 `/theme.js` + `/theme-light.css` 跟随同一份主题设置，已打开的工具 iframe 会实时切换；管理后台的 Chart.js 图表也会同步调整坐标轴与图例颜色。
+- **全局生效**：工具页通过 `/theme.js` + `/shared/vtc.css` 跟随同一份主题设置，已打开的工具 iframe 会实时切换；管理后台的 Chart.js 图表会在切换时重建，并按新主题重新取色。
 
 ---
 
@@ -61,9 +61,7 @@ victor-tool-collection/
 │   ├── sw.js                # Service Worker
 │   └── manifest.json        # PWA 清单
 ├── shared/
-│   ├── vtc.css              # 公共样式：设计变量（暗/亮真实色板）+ vtc- 组件
-│   ├── migrate_theme.py     # 老页面迁移到变量色板的脚本
-│   └── patch_readability.py # 批量修正低对比文字色 / 中文标题字距
+│   └── vtc.css              # 公共样式：设计变量（暗/亮真实色板）+ vtc- 组件
 ├── tools/
 │   ├── admin/               # 管理后台（访问统计仪表盘）
 │   ├── backend/             # Go 后端服务（Gin + GORM）
@@ -81,7 +79,6 @@ victor-tool-collection/
 │   └── webshell/            # Web 终端（ttyd）
 └── deploy/
     ├── README.md             # 部署说明
-    ├── apply-p0.sh           # P0 安全加固安装脚本（sudo）
     ├── deploy.sh             # 日常部署：测试 + 编译 + 同步 nginx + 重启
     ├── backup.sh             # 数据库与乐谱备份（cron 每日 03:40）
     └── nginx/

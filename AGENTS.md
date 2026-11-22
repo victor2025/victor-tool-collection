@@ -98,7 +98,7 @@
   <link rel="stylesheet" href="/shared/vtc.css">
   ```
 - 组件类名一律加 `vtc-` 前缀，避免与历史页面的 `.pane-header` / `.act` 冲突
-- 老页面仍由 `nav/theme-light.css` 的 invert 方案兜底，迁移时逐页切换，并在迁移页上移除该页对 invert 的依赖
+- 全站页面已迁移完毕，整页反相方案已删除；新页面只写变量，不要再引入任何反相/补丁式主题文件
 
 #### 迁移状态（2026-11）
 
@@ -106,26 +106,13 @@
 
 首页 `nav`、`url-encode`、`timestamp`、`base64`、`escape`、`json-formatter`、`jwt-decoder`、`regex`、`qrcode`、`image-obfuscator`、`typhoon`、`webshell`、`admin`、`score-library`、`score-board`
 
-`nav/theme-light.css` 仅保留为缓存页面的兼容兜底，新页面**不要**再引用它。
+旧的整页反相方案（原 `nav/theme-light.css`）与一次性迁移脚本都已删除，后续不再需要。
 
 **三条迁移经验（新工具照抄即可）：**
 
 1. 页面 `<body>` 必须带 `vtc-native`，颜色只用 `var(--vtc-*)`，不留任何十六进制字面色
 2. 页面内部的语义别名（如乐谱夹的 `--surface` / `--muted`）写成 `var(--vtc-bg-elev)` 这样的派生关系，不要重新定义一套亮/暗色板
 3. canvas（Chart.js 等）不认 CSS 变量：用 `getComputedStyle(document.documentElement).getPropertyValue('--vtc-x')` 取值，并在 `vtc-theme-change` 事件里重建图表（参考 `tools/admin/dist/index.html`）
-
-#### 迁移工具
-
-`shared/migrate_theme.py` 用于把老页面机械迁移到变量色板，**只改 `<head>` 的样式引用和 `<style>` 里的颜色，绝不触碰 JS 与 DOM 结构**：
-
-```bash
-python3 shared/migrate_theme.py --dry-run tools/xxx/dist/index.html   # 只报告残留颜色
-python3 shared/migrate_theme.py tools/xxx/dist/index.html             # 实跑
-```
-
-- 输出里「残留≠0」说明还有脚本不认识的色值，需要先扩 `COLOR_MAP` 再跑一次（残留为 0 才算迁完）
-- 迁移后必须核对 JS 未被改动（脚本本身保证，但仍应用 `diff` 抽查一页）
-
 
 ### 已有 README.md 的模块
 
@@ -142,10 +129,8 @@ victor-tool-collection/
 ├── README.md          ← 项目总介绍（必须保持最新）
 ├── nav/               ← 导航页
 │   └── index.html
-├── shared/            ← 公共样式与迁移工具
-│   ├── vtc.css        ← 设计变量 + vtc- 前缀基础组件（新工具优先引用）
-│   ├── migrate_theme.py    ← 老页面迁到变量色板的脚本（只改样式，不动 JS）
-│   └── patch_readability.py ← 批量修正低对比文字色 / 中文标题字距
+├── shared/            ← 公共样式
+│   └── vtc.css        ← 设计变量 + vtc- 前缀基础组件（全站唯一色板来源）
 ├── tools/             ← 工具模块（每个子目录必须有 README.md）
 │   ├── base64/        Base64 编解码
 │   ├── json-formatter/ JSON 格式化/转义工具

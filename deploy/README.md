@@ -17,7 +17,6 @@ victor-tool-collection/
 │   │   ├── 00-vtc-limits.conf       # limit_req_zone / map（http 上下文）
 │   │   ├── 10-vtc-gzip.conf         # 压缩类型（CSS/JS/JSON/SVG）
 │   │   └── vtc-security-headers.conf # 安全响应头片段（每个 location include）
-│   ├── apply-p0.sh          # P0 安全加固一键安装脚本（sudo）
 │   ├── deploy.sh            # 日常部署：测试 + 编译 + 同步配置 + 重启
 │   ├── backup.sh            # 数据库与乐谱图片备份（cron 每日调用）
 │   └── README.md
@@ -206,7 +205,7 @@ sudo nginx -t && sudo nginx -s reload
 一次性的安全基线，安装方式：
 
 ```bash
-sudo bash deploy/apply-p0.sh
+sudo bash deploy/deploy.sh
 ```
 
 脚本做了什么：

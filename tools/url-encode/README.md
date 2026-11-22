@@ -30,7 +30,7 @@ tools/url-encode/
 ## 主题适配
 
 - `<head>` 引入 `/shared/vtc.css`，颜色全部用 `var(--vtc-*)`
-- `<body>` 带 `vtc-native` 类，`nav/theme-light.css` 的 invert 兜底会自动跳过它
+- `<body>` 带 `vtc-native` 类，与全站其它工具页共用同一套变量主题
 - 主题切换仍由 `/theme.js` + 导航页的 postMessage 驱动，无需页面自己监听
 
 ## 构建与部署
